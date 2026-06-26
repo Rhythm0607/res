@@ -1,4 +1,4 @@
-import { Search, Filter, Star, CheckCircle } from 'lucide-react';
+import { Filter, Star } from 'lucide-react';
 
 const candidates = [
   { id: 1, name: 'Alex Johnson', role: 'Senior Backend Engineer', score: 98, skills: ['Python', 'FastAPI', 'Docker', 'AWS'], exp: 6 },

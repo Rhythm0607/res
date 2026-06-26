@@ -24,6 +24,7 @@ class Job(Base):
     employment_type = Column(String)
     salary_range = Column(String)
     work_model = Column(String) 
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
 class Candidate(Base):

@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import { ArrowRight, BrainCircuit, BarChart, FileText, CheckCircle2 } from 'lucide-react';
+import { ArrowRight, BrainCircuit, BarChart, FileText } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 export default function LandingPage() {

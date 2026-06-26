@@ -1,9 +1,11 @@
 import { Outlet, Link, useLocation } from 'react-router-dom';
-import { LayoutDashboard, Briefcase, Users, MessageSquare, Settings, Bell, Search, BrainCircuit } from 'lucide-react';
+import { LayoutDashboard, Briefcase, Users, MessageSquare, Settings, Bell, Search, BrainCircuit, LogOut } from 'lucide-react';
 import clsx from 'clsx';
+import { useAuth } from '../context/AuthContext';
 
 export default function DashboardLayout() {
   const location = useLocation();
+  const { user, logout } = useAuth();
 
   const navItems = [
     { name: 'Dashboard', path: '/app/dashboard', icon: LayoutDashboard },
@@ -35,14 +37,23 @@ export default function DashboardLayout() {
             );
           })}
         </nav>
-        <div className="p-6 border-t border-border">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-primary to-secondary"></div>
-            <div>
-              <p className="font-semibold text-sm">Recruiter Pro</p>
-              <p className="text-xs text-muted">Admin</p>
+        <div className="p-6 border-t border-border flex items-center justify-between gap-3">
+          <div className="flex items-center gap-3 overflow-hidden">
+            <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-primary to-secondary flex items-center justify-center font-bold text-white uppercase flex-shrink-0">
+              {user?.full_name?.charAt(0) || 'R'}
+            </div>
+            <div className="overflow-hidden">
+              <p className="font-semibold text-sm truncate">{user?.full_name || 'Recruiter Pro'}</p>
+              <p className="text-xs text-muted truncate">{user?.email || 'admin@hiresense.ai'}</p>
             </div>
           </div>
+          <button 
+            onClick={logout} 
+            className="p-2 text-muted hover:text-danger hover:bg-danger/10 rounded-lg transition"
+            title="Log Out"
+          >
+            <LogOut size={18} />
+          </button>
         </div>
       </aside>
 
@@ -58,9 +69,9 @@ export default function DashboardLayout() {
               <Bell size={20} />
               <span className="absolute top-2.5 right-2.5 w-2 h-2 bg-danger rounded-full border border-card"></span>
             </button>
-            <button className="px-4 py-2 bg-primary text-white text-sm font-semibold rounded-xl shadow-soft hover:bg-primary/90 transition">
+            <Link to="/app/jobs?create=true" className="px-4 py-2 bg-primary text-white text-sm font-semibold rounded-xl shadow-soft hover:bg-primary/90 transition flex items-center justify-center">
               + New Job
-            </button>
+            </Link>
           </div>
         </header>
 
