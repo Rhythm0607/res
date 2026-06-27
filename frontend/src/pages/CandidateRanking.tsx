@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react';
-import { useSearchParams } from 'react-router-dom';
-import { Star, Briefcase, Users, ShieldAlert, X, Trash2 } from 'lucide-react';
+import { useSearchParams, useNavigate } from 'react-router-dom';
+import { Star, Briefcase, Users, ShieldAlert, X, Trash2, MessageSquare } from 'lucide-react';
 import { jobService, JobResponse } from '@/services/jobService';
 import { resumeService, CandidateMatchResponse } from '@/services/resumeService';
 
 export default function CandidateRanking() {
+  const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const [jobs, setJobs] = useState<JobResponse[]>([]);
   const [candidates, setCandidates] = useState<CandidateMatchResponse[]>([]);
@@ -194,6 +195,16 @@ export default function CandidateRanking() {
                       title="Delete Candidate"
                     >
                       <Trash2 size={16} />
+                    </button>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        navigate(`/app/chat?candidateId=${c.candidate_id}&jobId=${selectedJobId}`);
+                      }}
+                      className="p-2 text-muted hover:text-primary hover:bg-primary/10 rounded-xl transition opacity-0 group-hover:opacity-100 focus:opacity-100"
+                      title="Chat with Candidate"
+                    >
+                      <MessageSquare size={16} />
                     </button>
                   </div>
                   <div className="text-right">

@@ -56,6 +56,16 @@ export const resumeService = {
    */
   deleteCandidate: async (jobId: number, candidateId: number): Promise<void> => {
     await api.delete(`/resumes/candidates/${candidateId}?job_id=${jobId}`);
+  },
+
+  /**
+   * Initialize a RAG chatbot session for a candidate using their database resume text.
+   */
+  initializeChatSession: async (candidateId: number): Promise<{ session_id: string; status: string; candidate_name: string }> => {
+    const response = await api.post<{ session_id: string; status: string; candidate_name: string }>(
+      `/chat/initialize-candidate/${candidateId}`
+    );
+    return response.data;
   }
 };
 
