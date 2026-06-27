@@ -10,6 +10,7 @@ class Settings(BaseSettings):
     DATABASE_URL: str = os.getenv("DATABASE_URL", "postgresql://postgres:password@localhost:5432/hiresense")
     OPENAI_API_KEY: str = os.getenv("OPENAI_API_KEY", "")
     GOOGLE_CLIENT_ID: str = ""
+    GEMINI_API_KEY: str = ""
 
     class Config:
         env_file = ".env"

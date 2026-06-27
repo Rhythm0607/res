@@ -49,6 +49,13 @@ export const resumeService = {
   getJobCandidates: async (jobId: number): Promise<CandidateMatchResponse[]> => {
     const response = await api.get<CandidateMatchResponse[]>(`/resumes/candidates?job_id=${jobId}`);
     return response.data;
+  },
+
+  /**
+   * Delete a candidate's resume and match results for a specific job.
+   */
+  deleteCandidate: async (jobId: number, candidateId: number): Promise<void> => {
+    await api.delete(`/resumes/candidates/${candidateId}?job_id=${jobId}`);
   }
 };
 
@@ -67,6 +74,7 @@ export interface CandidateMatchResponse {
   missing_skills: string[];
   ai_summary: string;
   status: string;
+  resume_text: string;
 }
 
 export default resumeService;

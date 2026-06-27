@@ -71,6 +71,7 @@ class CandidateMatchResponse(BaseModel):
     missing_skills: List[str]
     ai_summary: Optional[str] = None
     status: str
+    resume_text: str
 
     class Config:
         from_attributes = True

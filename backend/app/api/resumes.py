@@ -237,7 +237,59 @@ def get_job_candidates(
                 education_match_score=match.education_match_score or 0.0,
                 missing_skills=match.missing_skills or [],
                 ai_summary=match.ai_summary or "",
-                status=match.status or "Uploaded"
+                status=match.status or "Uploaded",
+                resume_text=candidate.resume_text or ""
             )
         )
     return response
+
+@router.delete("/candidates/{candidate_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_candidate_resume(
+    candidate_id: int,
+    job_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    # 1. Verify job exists and belongs to current user
+    job = db.query(Job).filter(Job.id == job_id, Job.user_id == current_user.id).first()
+    if not job:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Job not found or unauthorized access"
+        )
+        
+    # 2. Find and delete MatchResult
+    match = db.query(MatchResult).filter(
+        MatchResult.job_id == job_id,
+        MatchResult.candidate_id == candidate_id
+    ).first()
+    if not match:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Candidate match not found for this position"
+        )
+        
+    db.delete(match)
+    
+    # 3. Find candidate and delete file copy
+    candidate = db.query(Candidate).filter(Candidate.id == candidate_id).first()
+    if candidate:
+        # Delete file copy from backend/uploads/{job_id}/
+        job_upload_dir = os.path.join(UPLOAD_DIR, str(job_id))
+        if os.path.exists(job_upload_dir):
+            for filename in os.listdir(job_upload_dir):
+                clean_name = os.path.splitext(filename)[0].lower().replace(" ", "_").replace("-", "_")
+                cand_email_name = candidate.email.split('@')[0]
+                if cand_email_name in clean_name or clean_name in candidate.name.lower().replace(" ", "_"):
+                    try:
+                        os.remove(os.path.join(job_upload_dir, filename))
+                    except Exception as e:
+                        print("Failed to delete file copy on disk:", str(e))
+                        
+        # 4. If this candidate has no other match results, delete the candidate record entirely
+        other_matches = db.query(MatchResult).filter(MatchResult.candidate_id == candidate_id).first()
+        if not other_matches:
+            db.delete(candidate)
+            
+    db.commit()
+    return None
