@@ -5,6 +5,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { BrainCircuit, Mail, Lock, Eye, EyeOff } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { GoogleLogin } from '@react-oauth/google';
 
 // Validation Schema
 const loginSchema = z.object({
@@ -16,7 +17,7 @@ const loginSchema = z.object({
 type LoginFormValues = z.infer<typeof loginSchema>;
 
 export default function Login() {
-  const { login } = useAuth();
+  const { login, loginWithGoogle } = useAuth();
   const navigate = useNavigate();
   const [error, setError] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState(false);
@@ -154,32 +155,40 @@ export default function Login() {
           <span className="w-1/4 h-px bg-border"></span>
         </div>
 
-        <div className="grid grid-cols-2 gap-3">
+        <div className="flex flex-col gap-3">
           {/* Google */}
-          <button 
-            type="button" 
-            onClick={() => alert("Google Single Sign-On is not configured for this enterprise demo.")}
-            className="flex items-center justify-center gap-2.5 py-2.5 border border-border bg-card text-text hover:bg-background rounded-xl text-xs font-bold transition active:scale-95"
-          >
-            <svg className="w-4 h-4" viewBox="0 0 24 24">
-              <path fill="#EA4335" d="M12 5.04c1.66 0 3.2.57 4.38 1.69l3.27-3.27C17.67 1.48 14.98 1 12 1 7.35 1 3.37 3.68 1.42 7.57l3.85 2.99C6.18 7.37 8.87 5.04 12 5.04z"/>
-              <path fill="#4285F4" d="M23.49 12.27c0-.81-.07-1.59-.2-2.35H12v4.51h6.44c-.28 1.46-1.1 2.69-2.33 3.51l3.62 2.81c2.12-1.95 3.76-4.83 3.76-8.5z"/>
-              <path fill="#FBBC05" d="M5.27 14.44c-.25-.75-.39-1.56-.39-2.44s.14-1.69.39-2.44L1.42 6.57C.51 8.39 0 10.42 0 12.5s.51 4.11 1.42 5.93l3.85-2.99z"/>
-              <path fill="#34A853" d="M12 23c3.24 0 5.97-1.07 7.96-2.91l-3.62-2.81c-1.1.74-2.51 1.18-4.34 1.18-3.13 0-5.82-2.33-6.77-5.52L1.38 15.93C3.33 19.82 7.31 22.5 12 23z"/>
-            </svg>
-            Google
-          </button>
+          <div className="flex justify-center w-full">
+            <GoogleLogin
+              onSuccess={async (credentialResponse) => {
+                if (credentialResponse.credential) {
+                  try {
+                    setError(null);
+                    await loginWithGoogle(credentialResponse.credential);
+                    navigate('/app/dashboard');
+                  } catch (err) {
+                    setError('Google Login failed. Please try again.');
+                  }
+                }
+              }}
+              onError={() => {
+                setError('Google sign-in was unsuccessful.');
+              }}
+              theme="outline"
+              size="large"
+              width="384"
+            />
+          </div>
 
           {/* GitHub */}
           <button 
             type="button" 
             onClick={() => alert("GitHub Single Sign-On is not configured for this enterprise demo.")}
-            className="flex items-center justify-center gap-2.5 py-2.5 border border-border bg-card text-text hover:bg-background rounded-xl text-xs font-bold transition active:scale-95"
+            className="flex items-center justify-center gap-2.5 py-2.5 border border-border bg-card text-text hover:bg-background rounded-xl text-xs font-bold transition active:scale-95 w-full mt-1"
           >
             <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
               <path fillRule="evenodd" clipRule="evenodd" d="M12 2C6.477 2 2 6.477 2 12c0 4.42 2.865 8.17 6.839 9.49.5.092.682-.217.682-.482 0-.237-.008-.866-.013-1.7-2.782.603-3.369-1.34-3.369-1.34-.454-1.156-1.11-1.464-1.11-1.464-.908-.62.069-.608.069-.608 1.003.07 1.531 1.03 1.531 1.03.892 1.529 2.341 1.087 2.91.831.092-.646.35-1.086.636-1.336-2.22-.253-4.555-1.11-4.555-4.943 0-1.091.39-1.984 1.029-2.683-.103-.253-.446-1.27.098-2.647 0 0 .84-.269 2.75 1.025A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.294 2.747-1.025 2.747-1.025.546 1.377.203 2.394.1 2.647.64.699 1.028 1.592 1.028 2.683 0 3.842-2.339 4.687-4.566 4.935.359.309.678.919.678 1.852 0 1.336-.012 2.415-.012 2.743 0 .267.18.579.688.481C19.137 20.167 22 16.418 22 12c0-5.523-4.477-10-10-10z" />
             </svg>
-            GitHub
+            Continue with GitHub
           </button>
         </div>
 

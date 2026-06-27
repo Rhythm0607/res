@@ -9,8 +9,10 @@ class Settings(BaseSettings):
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24 * 8
     DATABASE_URL: str = os.getenv("DATABASE_URL", "postgresql://postgres:password@localhost:5432/hiresense")
     OPENAI_API_KEY: str = os.getenv("OPENAI_API_KEY", "")
+    GOOGLE_CLIENT_ID: str = ""
 
     class Config:
+        env_file = ".env"
         case_sensitive = True
 
 settings = Settings()

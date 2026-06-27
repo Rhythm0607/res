@@ -7,6 +7,7 @@ interface AuthContextType {
   loading: boolean;
   login: (email: string, password: string, rememberMe?: boolean) => Promise<void>;
   registerUser: (fullName: string, email: string, password: string) => Promise<void>;
+  loginWithGoogle: (googleToken: string) => Promise<void>;
   logout: () => void;
 }
 
@@ -75,6 +76,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  const loginWithGoogle = async (googleToken: string) => {
+    setLoading(true);
+    try {
+      const res = await api.post('/auth/google', { credential_token: googleToken });
+      const token = res.data.access_token;
+      localStorage.setItem('token', token);
+      api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+      const userData = await authService.getMe();
+      setUser(userData);
+    } catch (error) {
+      logout();
+      throw error;
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const logout = () => {
     localStorage.removeItem('token');
     delete api.defaults.headers.common['Authorization'];
@@ -82,7 +100,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, registerUser, logout }}>
+    <AuthContext.Provider value={{ user, loading, login, registerUser, loginWithGoogle, logout }}>
       {children}
     </AuthContext.Provider>
   );

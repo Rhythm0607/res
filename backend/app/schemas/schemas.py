@@ -52,3 +52,7 @@ class ChatRequest(BaseModel):
     session_id: str
     question: str
     chat_history: List[Dict[str, str]] = []
+
+class GoogleLoginRequest(BaseModel):
+    credential_token: str
+

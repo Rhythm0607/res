@@ -9,11 +9,15 @@ import ResumeChatbot from '@/pages/ResumeChatbot';
 import CandidateRanking from '@/pages/CandidateRanking';
 import { AuthProvider } from '@/context/AuthContext';
 import ProtectedRoute from '@/components/ProtectedRoute';
+import { GoogleOAuthProvider } from '@react-oauth/google';
 
 function App() {
+  const googleClientId = (import.meta as any).env.VITE_GOOGLE_CLIENT_ID || "1098679541315-k1djspe958m1kbh3v1oef96k48i1sk2f.apps.googleusercontent.com";
+
   return (
-    <AuthProvider>
-      <BrowserRouter>
+    <GoogleOAuthProvider clientId={googleClientId}>
+      <AuthProvider>
+        <BrowserRouter>
         <Routes>
           <Route path="/" element={<LandingPage />} />
           <Route path="/login" element={<Login />} />
@@ -31,7 +35,8 @@ function App() {
         </Routes>
       </BrowserRouter>
     </AuthProvider>
-  );
+  </GoogleOAuthProvider>
+);
 }
 
 export default App;
