@@ -5,10 +5,12 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { 
   Briefcase, MapPin, Search, Plus, Trash2, X, 
-  DollarSign, ArrowUpDown, Filter, Edit2
+  DollarSign, ArrowUpDown, Filter, Edit2, Upload,
+  UploadCloud, FileText, CheckCircle, AlertCircle, Trash, Loader2
 } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { jobService, JobResponse, JobCreate } from '@/services/jobService';
+import { resumeService } from '@/services/resumeService';
 
 // Validation Schema
 const jobFormSchema = z.object({
@@ -32,6 +34,107 @@ export default function JobManagement() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [editingJob, setEditingJob] = useState<JobResponse | null>(null);
+
+  // Upload States
+  const [uploadingJob, setUploadingJob] = useState<JobResponse | null>(null);
+  const [dragActive, setDragActive] = useState(false);
+  const [uploadFiles, setUploadFiles] = useState<{
+    id: string;
+    file: File;
+    progress: number;
+    status: 'pending' | 'uploading' | 'success' | 'error';
+    error?: string;
+  }[]>([]);
+
+  const openUploadModal = (job: JobResponse) => {
+    setUploadingJob(job);
+    setUploadFiles([]);
+    setDragActive(false);
+  };
+
+  const closeUploadModal = () => {
+    setUploadingJob(null);
+    setUploadFiles([]);
+  };
+
+  const handleDrag = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (e.type === "dragenter" || e.type === "dragover") {
+      setDragActive(true);
+    } else if (e.type === "dragleave") {
+      setDragActive(false);
+    }
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragActive(false);
+    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+      handleFileSelection(Array.from(e.dataTransfer.files));
+    }
+  };
+
+  const handleFileInput = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      handleFileSelection(Array.from(e.target.files));
+    }
+  };
+
+  const handleFileSelection = (files: File[]) => {
+    const validTypes = [
+      'application/pdf',
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+    ];
+    const newFiles = files.map(file => {
+      const fileExt = file.name.split('.').pop()?.toLowerCase();
+      const isValidType = validTypes.includes(file.type) || ['pdf', 'docx'].includes(fileExt || '');
+      const isValidSize = file.size <= 10 * 1024 * 1024;
+      let status: 'pending' | 'error' = 'pending';
+      let error = undefined;
+      if (!isValidType) {
+        status = 'error';
+        error = 'Only PDF and DOCX files are supported.';
+      } else if (!isValidSize) {
+        status = 'error';
+        error = 'File size exceeds 10MB limit.';
+      }
+      return {
+        id: Math.random().toString(36).substring(2, 9),
+        file,
+        progress: 0,
+        status,
+        error
+      };
+    });
+    setUploadFiles(prev => [...prev, ...newFiles]);
+  };
+
+  const removeFile = (id: string) => {
+    setUploadFiles(prev => prev.filter(f => f.id !== id));
+  };
+
+  const startUploads = async () => {
+    if (!uploadingJob) return;
+    const filesToUpload = uploadFiles.filter(f => f.status === 'pending');
+    for (const fileObj of filesToUpload) {
+      setUploadFiles(prev => prev.map(f => f.id === fileObj.id ? { ...f, status: 'uploading' } : f));
+      try {
+        await resumeService.uploadResume(
+          uploadingJob.id,
+          fileObj.file,
+          (progress) => {
+            setUploadFiles(prev => prev.map(f => f.id === fileObj.id ? { ...f, progress } : f));
+          }
+        );
+        setUploadFiles(prev => prev.map(f => f.id === fileObj.id ? { ...f, status: 'success', progress: 100 } : f));
+      } catch (err: any) {
+        const errorMsg = err.response?.data?.detail || 'Upload failed.';
+        setUploadFiles(prev => prev.map(f => f.id === fileObj.id ? { ...f, status: 'error', error: errorMsg } : f));
+      }
+    }
+  };
   
   // Search, Filter, Sort States
   const [searchQuery, setSearchQuery] = useState('');
@@ -368,6 +471,13 @@ export default function JobManagement() {
                     <td className="p-4 pr-6 text-right">
                       <div className="flex items-center justify-end gap-2">
                         <button 
+                          onClick={() => openUploadModal(job)}
+                          className="p-2 text-muted hover:text-success hover:bg-success/10 rounded-lg transition"
+                          title="Upload Resumes"
+                        >
+                          <Upload size={16} />
+                        </button>
+                        <button 
                           onClick={() => handleEdit(job)}
                           className="p-2 text-muted hover:text-primary hover:bg-primary/10 rounded-lg transition"
                           title="Edit Job"
@@ -595,6 +705,189 @@ export default function JobManagement() {
                     editingJob ? 'Save Changes' : 'Publish Position'
                   )}
                 </button>
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+
+      {/* Bulk Resume Upload Modal */}
+      <AnimatePresence>
+        {uploadingJob && (
+          <>
+            {/* Backdrop */}
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 0.4 }}
+              exit={{ opacity: 0 }}
+              onClick={closeUploadModal}
+              className="fixed inset-0 bg-black z-40 backdrop-blur-sm"
+            />
+
+            {/* Modal Dialog */}
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              transition={{ type: 'spring', duration: 0.4 }}
+              className="fixed inset-0 m-auto h-fit w-full max-w-xl bg-card border border-border rounded-2xl z-50 shadow-2xl flex flex-col overflow-hidden max-h-[85vh]"
+            >
+              {/* Header */}
+              <div className="p-6 border-b border-border flex items-center justify-between bg-background/50">
+                <div>
+                  <h3 className="text-lg font-bold text-text flex items-center gap-2">
+                    <Upload size={20} className="text-primary" />
+                    Upload Resumes
+                  </h3>
+                  <p className="text-xs text-muted mt-0.5">
+                    Position: <span className="font-bold text-text">{uploadingJob.title}</span>
+                  </p>
+                </div>
+                <button 
+                  onClick={closeUploadModal}
+                  className="p-2 text-muted hover:text-text hover:bg-background rounded-lg transition"
+                >
+                  <X size={20} />
+                </button>
+              </div>
+
+              {/* Body */}
+              <div className="p-6 overflow-y-auto space-y-6">
+                {/* Drag & Drop Zone */}
+                <div 
+                  onDragEnter={handleDrag}
+                  onDragOver={handleDrag}
+                  onDragLeave={handleDrag}
+                  onDrop={handleDrop}
+                  className={`border-2 border-dashed rounded-2xl p-8 flex flex-col items-center justify-center text-center transition-all cursor-pointer relative ${
+                    dragActive 
+                      ? 'border-primary bg-primary/5 scale-[1.02]' 
+                      : 'border-border hover:border-primary/50 hover:bg-background/40'
+                  }`}
+                >
+                  <input 
+                    type="file" 
+                    multiple
+                    accept=".pdf,.docx"
+                    onChange={handleFileInput}
+                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                  />
+                  <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center text-primary mb-3">
+                    <UploadCloud size={24} />
+                  </div>
+                  <p className="text-sm font-bold text-text mb-1">
+                    Drag and drop your candidate resumes here
+                  </p>
+                  <p className="text-xs text-muted font-medium mb-3">
+                    Supports PDF and DOCX files up to 10MB each
+                  </p>
+                  <span className="px-3 py-1.5 bg-background border border-border text-[11px] font-bold uppercase tracking-wider rounded-lg shadow-sm hover:border-primary/30 transition">
+                    Browse Files
+                  </span>
+                </div>
+
+                {/* File List */}
+                {uploadFiles.length > 0 && (
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between text-xs font-bold text-muted uppercase tracking-wider">
+                      <span>Resumes ({uploadFiles.length})</span>
+                      <button 
+                        onClick={() => setUploadFiles([])}
+                        className="text-danger hover:underline normal-case font-bold"
+                      >
+                        Clear All
+                      </button>
+                    </div>
+
+                    <div className="space-y-2 max-h-60 overflow-y-auto pr-1">
+                      {uploadFiles.map((fileObj) => (
+                        <div 
+                          key={fileObj.id}
+                          className="p-3 bg-background border border-border rounded-xl flex items-center justify-between gap-4 shadow-sm"
+                        >
+                          <div className="flex items-center gap-3 min-w-0 flex-1">
+                            <div className={`p-2 rounded-lg ${
+                              fileObj.status === 'success' ? 'bg-success/15 text-success' :
+                              fileObj.status === 'error' ? 'bg-danger/15 text-danger' : 'bg-primary/10 text-primary'
+                            }`}>
+                              <FileText size={18} />
+                            </div>
+                            <div className="min-w-0 flex-1">
+                              <p className="text-sm font-bold text-text truncate">{fileObj.file.name}</p>
+                              <p className="text-xs text-muted font-semibold">
+                                {(fileObj.file.size / (1024 * 1024)).toFixed(2)} MB
+                              </p>
+                              
+                              {/* Progress bar */}
+                              {fileObj.status === 'uploading' && (
+                                <div className="w-full bg-border h-1.5 rounded-full mt-2 overflow-hidden">
+                                  <div 
+                                    className="bg-primary h-full rounded-full transition-all duration-300"
+                                    style={{ width: `${fileObj.progress}%` }}
+                                  />
+                                </div>
+                              )}
+                              
+                              {fileObj.status === 'error' && (
+                                <p className="text-[11px] text-danger font-medium mt-1 flex items-center gap-1">
+                                  <AlertCircle size={12} /> {fileObj.error}
+                                </p>
+                              )}
+                            </div>
+                          </div>
+
+                          <div className="flex items-center gap-2">
+                            {fileObj.status === 'success' && (
+                              <CheckCircle size={18} className="text-success flex-shrink-0" />
+                            )}
+                            {fileObj.status === 'uploading' && (
+                              <Loader2 size={16} className="text-primary animate-spin flex-shrink-0" />
+                            )}
+                            {(fileObj.status === 'pending' || fileObj.status === 'error') && (
+                              <button 
+                                onClick={() => removeFile(fileObj.id)}
+                                className="p-1.5 text-muted hover:text-danger hover:bg-danger/10 rounded-lg transition"
+                              >
+                                <Trash size={14} />
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Footer */}
+              <div className="p-6 border-t border-border flex items-center justify-between bg-background/50">
+                <a 
+                  href={`/app/candidates?jobId=${uploadingJob.id}`}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    closeUploadModal();
+                    window.location.href = `/app/candidates?jobId=${uploadingJob.id}`;
+                  }}
+                  className="text-xs font-bold text-primary hover:underline"
+                >
+                  View candidates for this position →
+                </a>
+                
+                <div className="flex items-center gap-3">
+                  <button 
+                    onClick={closeUploadModal}
+                    className="px-4 py-2 border border-border text-text text-xs font-bold rounded-lg hover:bg-background transition"
+                  >
+                    Close
+                  </button>
+                  <button 
+                    onClick={startUploads}
+                    disabled={uploadFiles.filter(f => f.status === 'pending').length === 0}
+                    className="px-4 py-2 bg-primary text-white text-xs font-bold rounded-lg hover:bg-primary-hover shadow-md disabled:opacity-50 transition"
+                  >
+                    Start Upload
+                  </button>
+                </div>
               </div>
             </motion.div>
           </>
