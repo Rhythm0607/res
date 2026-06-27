@@ -56,3 +56,22 @@ class ChatRequest(BaseModel):
 class GoogleLoginRequest(BaseModel):
     credential_token: str
 
+class CandidateMatchResponse(BaseModel):
+    candidate_id: int
+    name: str
+    email: str
+    extracted_skills: List[str]
+    experience_years: int
+    education: Any
+    ats_score: float
+    skill_match_score: float
+    semantic_score: float
+    experience_match_score: float
+    education_match_score: float
+    missing_skills: List[str]
+    ai_summary: Optional[str] = None
+    status: str
+
+    class Config:
+        from_attributes = True
+
