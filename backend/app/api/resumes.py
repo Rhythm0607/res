@@ -293,3 +293,44 @@ def delete_candidate_resume(
             
     db.commit()
     return None
+
+@router.get("/candidates/{candidate_id}/questions")
+def get_candidate_interview_questions(
+    candidate_id: int,
+    job_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    # 1. Verify job ownership
+    job = db.query(Job).filter(Job.id == job_id, Job.user_id == current_user.id).first()
+    if not job:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Unauthorized access to this vacancy context."
+        )
+        
+    # 2. Verify candidate exists
+    candidate = db.query(Candidate).filter(Candidate.id == candidate_id).first()
+    if not candidate:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Candidate not found."
+        )
+        
+    # 3. Verify match mapping exists
+    match = db.query(MatchResult).filter(MatchResult.candidate_id == candidate_id, MatchResult.job_id == job_id).first()
+    if not match:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Candidate match record not found for this position."
+        )
+        
+    # 4. Generate questions using RAG helper
+    from app.services.rag import generate_interview_questions
+    questions = generate_interview_questions(
+        resume_text=candidate.resume_text or "",
+        jd_text=job.description or "",
+        required_skills=job.required_skills or [],
+        candidate_skills=candidate.extracted_skills or []
+    )
+    return questions

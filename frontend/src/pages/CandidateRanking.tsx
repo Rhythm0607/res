@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
-import { Star, Briefcase, Users, ShieldAlert, X, Trash2, MessageSquare } from 'lucide-react';
+import { Star, Briefcase, Users, ShieldAlert, X, Trash2, MessageSquare, AlertCircle, ChevronDown, ChevronUp, Bot } from 'lucide-react';
 import { jobService, JobResponse } from '@/services/jobService';
-import { resumeService, CandidateMatchResponse } from '@/services/resumeService';
+import { resumeService, CandidateMatchResponse, InterviewQuestion } from '@/services/resumeService';
 
 export default function CandidateRanking() {
   const navigate = useNavigate();
@@ -17,8 +17,14 @@ export default function CandidateRanking() {
 
   // Modal State for Candidate Detail Breakdown
   const [activeCandidate, setActiveCandidate] = useState<CandidateMatchResponse | null>(null);
-  const [modalTab, setModalTab] = useState<'match' | 'profile' | 'text'>('match');
+  const [modalTab, setModalTab] = useState<'match' | 'profile' | 'text' | 'questions'>('match');
   const [expandedCandidates, setExpandedCandidates] = useState<Record<number, boolean>>({});
+  
+  // Interview Questions state
+  const [questions, setQuestions] = useState<InterviewQuestion[]>([]);
+  const [loadingQuestions, setLoadingQuestions] = useState(false);
+  const [questionsError, setQuestionsError] = useState<string | null>(null);
+  const [expandedQuestionId, setExpandedQuestionId] = useState<number | null>(null);
 
   const toggleSkills = (candidateId: number) => {
     setExpandedCandidates(prev => ({
@@ -26,6 +32,27 @@ export default function CandidateRanking() {
       [candidateId]: !prev[candidateId]
     }));
   };
+
+  // Load tailored interview questions when Tab is selected
+  useEffect(() => {
+    if (modalTab === 'questions' && activeCandidate && selectedJobId) {
+      const loadQuestions = async () => {
+        try {
+          setLoadingQuestions(true);
+          setQuestionsError(null);
+          setExpandedQuestionId(null);
+          const data = await resumeService.getCandidateQuestions(activeCandidate.candidate_id, selectedJobId);
+          setQuestions(data);
+        } catch (err) {
+          console.error('Failed to load questions:', err);
+          setQuestionsError('Could not load AI interview questions. Please make sure the backend is active.');
+        } finally {
+          setLoadingQuestions(false);
+        }
+      };
+      loadQuestions();
+    }
+  }, [modalTab, activeCandidate, selectedJobId]);
 
   // Load Job Openings on mount
   useEffect(() => {
@@ -178,7 +205,8 @@ export default function CandidateRanking() {
           {candidates.map((c, idx) => (
             <div 
               key={c.candidate_id} 
-              className="relative bg-card rounded-2xl p-6 border border-border shadow-sm hover:shadow-md transition-all group flex flex-col justify-between"
+              onClick={() => handleOpenModal(c)}
+              className="relative bg-card rounded-2xl p-6 border border-border shadow-sm hover:shadow-md hover:border-primary/40 transition-all group flex flex-col justify-between cursor-pointer"
             >
               {/* Highlight Rank 1 */}
               {idx === 0 && (
@@ -326,6 +354,16 @@ export default function CandidateRanking() {
                 }`}
               >
                 Raw Resume Text
+              </button>
+              <button
+                onClick={() => setModalTab('questions')}
+                className={`py-3.5 px-4 text-xs font-extrabold border-b-2 uppercase tracking-wider transition ${
+                  modalTab === 'questions'
+                    ? 'border-primary text-primary'
+                    : 'border-transparent text-muted hover:text-text'
+                }`}
+              >
+                Interview Prep
               </button>
             </div>
 
@@ -488,6 +526,94 @@ export default function CandidateRanking() {
                     {activeCandidate.resume_text || "No raw text extracted from this resume file."}
                   </pre>
                 </div>
+              </div>
+            )}
+
+            {modalTab === 'questions' && (
+              <div className="p-6 overflow-y-auto space-y-6 max-h-[60vh]">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-primary/10 text-primary rounded-xl flex-shrink-0">
+                    <Bot size={20} />
+                  </div>
+                  <div>
+                    <h4 className="text-sm font-bold text-text">AI Tailored Questions</h4>
+                    <p className="text-xs text-muted font-medium">Custom evaluation questions based on skills overlap and experience highlights.</p>
+                  </div>
+                </div>
+
+                {loadingQuestions && (
+                  <div className="space-y-4 animate-pulse">
+                    {[1, 2, 3].map(i => (
+                      <div key={i} className="bg-background border border-border p-5 rounded-2xl space-y-3">
+                        <div className="h-4 bg-muted/20 w-1/3 rounded"></div>
+                        <div className="h-6 bg-muted/20 w-3/4 rounded"></div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {questionsError && (
+                  <div className="p-4 bg-danger/5 border border-danger/20 rounded-2xl flex items-start gap-3">
+                    <AlertCircle className="text-danger mt-0.5" size={18} />
+                    <div>
+                      <p className="text-sm font-bold text-danger">Error Generating Questions</p>
+                      <p className="text-xs text-muted font-semibold mt-1">{questionsError}</p>
+                    </div>
+                  </div>
+                )}
+
+                {!loadingQuestions && !questionsError && (
+                  <div className="space-y-4">
+                    {questions.length === 0 ? (
+                      <div className="text-center py-8 text-muted font-medium text-sm">
+                        No tailored interview questions generated yet.
+                      </div>
+                    ) : (
+                      questions.map((q) => {
+                        const isExpanded = expandedQuestionId === q.id;
+                        return (
+                          <div 
+                            key={q.id} 
+                            className={`bg-background border rounded-2xl transition overflow-hidden ${
+                              isExpanded ? 'border-primary shadow-soft' : 'border-border hover:border-muted'
+                            }`}
+                          >
+                            <div 
+                              onClick={() => setExpandedQuestionId(isExpanded ? null : q.id)}
+                              className="p-5 flex items-start justify-between gap-4 cursor-pointer select-none"
+                            >
+                              <div className="space-y-2">
+                                <span className={`px-2.5 py-0.5 rounded-lg text-[9px] font-extrabold uppercase tracking-wider block w-fit ${
+                                  q.category === 'Technical' 
+                                    ? 'bg-primary/10 text-primary' 
+                                    : 'bg-success/10 text-success'
+                                }`}>
+                                  {q.category} Question
+                                </span>
+                                <p className="font-bold text-sm text-text leading-relaxed">{q.question}</p>
+                              </div>
+                              <div className="text-muted flex-shrink-0 mt-0.5">
+                                {isExpanded ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
+                              </div>
+                            </div>
+
+                            {isExpanded && (
+                              <div className="px-5 pb-5 pt-3 border-t border-border bg-card/40">
+                                <div className="flex items-start gap-2.5 bg-primary/5 p-4 rounded-xl border border-primary/10">
+                                  <ShieldAlert size={16} className="text-primary shrink-0 mt-0.5" />
+                                  <div>
+                                    <p className="text-[10px] font-bold text-primary uppercase tracking-wider mb-1">Recruiter Evaluation Guide</p>
+                                    <p className="text-xs text-text font-medium leading-relaxed">{q.evaluation_guide}</p>
+                                  </div>
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })
+                    )}
+                  </div>
+                )}
               </div>
             )}
 

@@ -66,8 +66,23 @@ export const resumeService = {
       `/chat/initialize-candidate/${candidateId}`
     );
     return response.data;
+  },
+
+  /**
+   * Fetch tailored interview questions and evaluation guides for a candidate.
+   */
+  getCandidateQuestions: async (candidateId: number, jobId: number): Promise<InterviewQuestion[]> => {
+    const response = await api.get<InterviewQuestion[]>(`/resumes/candidates/${candidateId}/questions?job_id=${jobId}`);
+    return response.data;
   }
 };
+
+export interface InterviewQuestion {
+  id: number;
+  category: 'Technical' | 'Behavioral';
+  question: string;
+  evaluation_guide: string;
+}
 
 export interface CandidateMatchResponse {
   candidate_id: number;

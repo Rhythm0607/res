@@ -1,4 +1,5 @@
 from typing import Optional, List, Any
+import json
 import requests
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain_openai import OpenAIEmbeddings, ChatOpenAI
@@ -137,3 +138,121 @@ def query_resume(chain, question: str, chat_history: List[dict]):
         
     response = chain({"question": question, "chat_history": formatted_history})
     return response["answer"]
+
+def generate_interview_questions(resume_text: str, jd_text: str, required_skills: List[str], candidate_skills: List[str]) -> List[dict]:
+    # 1. Determine active LLM
+    from app.core.config import settings
+    llm = None
+    if settings.OPENAI_API_KEY:
+        from langchain_openai import ChatOpenAI
+        llm = ChatOpenAI(
+            model_name="gpt-4-turbo-preview", 
+            temperature=0.7, 
+            openai_api_key=settings.OPENAI_API_KEY
+        )
+    elif settings.GEMINI_API_KEY:
+        llm = GeminiLLM(api_key=settings.GEMINI_API_KEY)
+    else:
+        llm = OllamaLLM()
+
+    # 2. Build detailed prompt
+    missing_skills = [s for s in required_skills if s.lower() not in [cs.lower() for cs in candidate_skills]]
+    
+    prompt = f"""
+You are an expert recruiter and technical hiring manager.
+Compare the candidate's resume text and the job vacancy requirements.
+
+Job Vacancy Description:
+{jd_text}
+
+Job Required Skills:
+{", ".join(required_skills) if required_skills else "None specified"}
+
+Candidate's Parsed Skills:
+{", ".join(candidate_skills) if candidate_skills else "None parsed"}
+
+Candidate's Resume Text (Excerpt):
+{resume_text[:4000]}
+
+Based on this, identify:
+1. Missing required skills (specifically: {", ".join(missing_skills) if missing_skills else "None identified"}).
+2. Strengths and technologies claimed in their resume.
+
+Generate exactly 5 tailored interview questions:
+- 3 Technical questions: test them on required skills, or probe their familiarity with the missing skills/alternate concepts.
+- 2 Behavioral/Project questions: ask about specific projects, achievements, or tech stacks listed in their resume.
+
+For each question, provide a detailed "Evaluation Guide" explaining the key concepts, keywords, and indicators the recruiter should look for in a good answer.
+
+Your response MUST be a valid JSON array of objects. Do NOT include markdown blocks like ```json ... ``` or any other text before/after the JSON.
+Each object in the array must have the following keys:
+- "id": integer (1 to 5)
+- "category": string ("Technical" or "Behavioral")
+- "question": string
+- "evaluation_guide": string
+
+Example Output Format:
+[
+  {{
+    "id": 1,
+    "category": "Technical",
+    "question": "Can you explain...",
+    "evaluation_guide": "Look for explanation of..."
+  }}
+]
+"""
+    try:
+        # Query active model
+        if hasattr(llm, "invoke"):
+            response = llm.invoke(prompt)
+            content = response.content if hasattr(response, "content") else str(response)
+        else:
+            content = llm._call(prompt)
+            
+        content = content.strip()
+        if content.startswith("```json"):
+            content = content[7:]
+        if content.endswith("```"):
+            content = content[:-3]
+        content = content.strip()
+        
+        questions = json.loads(content)
+        if isinstance(questions, list) and len(questions) > 0:
+            return questions
+            
+    except Exception as e:
+        print(f"Failed to generate questions using LLM: {str(e)}")
+        
+    # Fallback questions if LLM fails or times out
+    return [
+        {
+            "id": 1,
+            "category": "Technical",
+            "question": f"Based on your resume, how would you approach working with the required technologies for this role, specifically {', '.join(required_skills[:3]) if required_skills else 'software development'}?",
+            "evaluation_guide": "Look for structured explanations of candidate's core design practices and direct familiarity with the requested tech stack."
+        },
+        {
+            "id": 2,
+            "category": "Technical",
+            "question": f"The job description highlights the need for {missing_skills[0] if missing_skills else 'advanced problem-solving'}. Do you have experience with this, or how would you adapt if required to learn it?",
+            "evaluation_guide": "Look for adaptability, self-learning methodologies, and transferrable tech knowledge from their parsed profile."
+        },
+        {
+            "id": 3,
+            "category": "Technical",
+            "question": "Walk us through the technical architecture of the most challenging project listed on your resume.",
+            "evaluation_guide": "Check for concrete details, scaling decisions, database selection reasoning, and clarity of communication."
+        },
+        {
+            "id": 4,
+            "category": "Behavioral",
+            "question": "Tell us about a time you had to resolve a technical disagreement with a team member or stakeholder.",
+            "evaluation_guide": "Evaluate active listening skills, constructive compromises, and focus on delivering business value."
+        },
+        {
+            "id": 5,
+            "category": "Behavioral",
+            "question": "How do you manage your time and prioritize tasks when handling multiple projects or deliverables?",
+            "evaluation_guide": "Look for specific methodologies (e.g. Agile, Kanban, calendar blocks) and communication practices with project managers."
+        }
+    ]
