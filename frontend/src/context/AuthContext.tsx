@@ -9,6 +9,7 @@ interface AuthContextType {
   registerUser: (fullName: string, email: string, password: string) => Promise<void>;
   loginWithGoogle: (googleToken: string) => Promise<void>;
   logout: () => void;
+  setUser: React.Dispatch<React.SetStateAction<UserResponse | null>>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -100,7 +101,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, registerUser, loginWithGoogle, logout }}>
+    <AuthContext.Provider value={{ user, loading, login, registerUser, loginWithGoogle, logout, setUser }}>
       {children}
     </AuthContext.Provider>
   );

@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 from fastapi.security import OAuth2PasswordRequestForm
 from app.database import get_db
 from app.models.schema import User
-from app.schemas.schemas import UserCreate, UserResponse, Token
+from app.schemas.schemas import UserCreate, UserResponse, Token, ProfileUpdate, PasswordUpdate
 from app.core.security import get_password_hash, verify_password, create_access_token
 from datetime import timedelta
 from app.core.config import settings
@@ -84,3 +84,39 @@ def google_login(payload: GoogleLoginRequest, db: Session = Depends(get_db)):
     except ValueError as e:
         print("Google OAuth verification failed:", str(e))
         raise HTTPException(status_code=400, detail="Invalid Google token: " + str(e))
+
+@router.put("/profile", response_model=UserResponse)
+def update_profile(
+    payload: ProfileUpdate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    if payload.email != current_user.email:
+        other_user = db.query(User).filter(User.email == payload.email).first()
+        if other_user:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Email is already in use by another recruiter account."
+            )
+            
+    current_user.full_name = payload.full_name
+    current_user.email = payload.email
+    db.commit()
+    db.refresh(current_user)
+    return current_user
+
+@router.put("/password", status_code=status.HTTP_204_NO_CONTENT)
+def update_password(
+    payload: PasswordUpdate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    if not verify_password(payload.current_password, current_user.hashed_password):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Incorrect current password."
+        )
+        
+    current_user.hashed_password = get_password_hash(payload.new_password)
+    db.commit()
+    return None

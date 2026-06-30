@@ -76,3 +76,11 @@ class CandidateMatchResponse(BaseModel):
     class Config:
         from_attributes = True
 
+class ProfileUpdate(BaseModel):
+    full_name: str
+    email: str
+
+class PasswordUpdate(BaseModel):
+    current_password: str
+    new_password: str
+

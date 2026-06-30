@@ -1,15 +1,31 @@
+:root {
+  --background: 248 250 252; /* #F8FAFC */
+  --card: 255 255 255;       /* #FFFFFF */
+  --text: 15 23 42;          /* #0F172A */
+  --muted: 100 116 139;      /* #64748B */
+  --border: 226 232 240;     /* #E2E8F0 */
+}
+
+:root.dark, html.dark {
+  --background: 11 15 25;    /* #0B0F19 */
+  --card: 21 29 42;          /* #151D2A */
+  --text: 248 250 252;       /* #F8FAFC */
+  --muted: 148 163 184;      /* #94A3B8 */
+  --border: 30 41 59;        /* #1E293B */
+}
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 @layer base {
   body {
-    @apply bg-background text-text antialiased;
+    @apply bg-background text-text antialiased transition-colors duration-200;
   }
 }
 
 .glass-panel {
-  @apply bg-white/70 backdrop-blur-md border border-white/40 shadow-glass;
+  @apply bg-card/75 backdrop-blur-md border border-border shadow-glass;
 }
 
 ::-webkit-scrollbar {

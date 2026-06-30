@@ -18,6 +18,14 @@ export default function CandidateRanking() {
   // Modal State for Candidate Detail Breakdown
   const [activeCandidate, setActiveCandidate] = useState<CandidateMatchResponse | null>(null);
   const [modalTab, setModalTab] = useState<'match' | 'profile' | 'text'>('match');
+  const [expandedCandidates, setExpandedCandidates] = useState<Record<number, boolean>>({});
+
+  const toggleSkills = (candidateId: number) => {
+    setExpandedCandidates(prev => ({
+      ...prev,
+      [candidateId]: !prev[candidateId]
+    }));
+  };
 
   // Load Job Openings on mount
   useEffect(() => {
@@ -228,7 +236,7 @@ export default function CandidateRanking() {
 
                 {/* Parsed Skills */}
                 <div className="flex flex-wrap gap-1.5 mb-6">
-                  {c.extracted_skills.slice(0, 4).map(skill => (
+                  {(expandedCandidates[c.candidate_id] ? c.extracted_skills : c.extracted_skills.slice(0, 4)).map(skill => (
                     <span 
                       key={skill} 
                       className="px-2.5 py-1 bg-background border border-border rounded-lg text-[10px] font-bold uppercase tracking-wide text-text"
@@ -237,9 +245,15 @@ export default function CandidateRanking() {
                     </span>
                   ))}
                   {c.extracted_skills.length > 4 && (
-                    <span className="px-2.5 py-1 bg-background border border-border rounded-lg text-[10px] font-bold text-muted">
-                      +{c.extracted_skills.length - 4} more
-                    </span>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        toggleSkills(c.candidate_id);
+                      }}
+                      className="px-2.5 py-1 bg-background border border-border hover:border-primary hover:text-primary rounded-lg text-[10px] font-bold text-muted transition cursor-pointer"
+                    >
+                      {expandedCandidates[c.candidate_id] ? 'Show less' : `+${c.extracted_skills.length - 4} more`}
+                    </button>
                   )}
                 </div>
               </div>

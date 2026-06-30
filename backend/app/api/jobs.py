@@ -1,9 +1,10 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from app.database import get_db
-from app.models.schema import Job, MatchResult, User
+from app.models.schema import Job, MatchResult, User, Candidate
 from app.schemas.schemas import JobCreate, JobResponse
 from app.api.deps import get_current_user
+from app.services.matcher import compute_semantic_similarity, calculate_ats_score
 from typing import List
 
 router = APIRouter()
@@ -43,6 +44,8 @@ def update_job(job_id: int, job: JobCreate, db: Session = Depends(get_db), curre
         setattr(db_job, key, value)
         
     db.commit()
+    # Recalculate all match scores for already-uploaded candidates using the new job description & skills
+    recalculate_job_matches(db, db_job)
     db.refresh(db_job)
     return db_job
 
@@ -62,3 +65,58 @@ def delete_job(job_id: int, db: Session = Depends(get_db), current_user: User = 
     db.commit()
     return None
 
+def recalculate_job_matches(db: Session, job: Job):
+    matches = db.query(MatchResult).filter(MatchResult.job_id == job.id).all()
+    for match in matches:
+        candidate = db.query(Candidate).filter(Candidate.id == match.candidate_id).first()
+        if not candidate:
+            continue
+            
+        try:
+            # 1. Recalculate semantic similarity
+            semantic_score = compute_semantic_similarity(candidate.resume_text or "", job.description)
+            
+            # 2. Recalculate skills match
+            job_skills = [s.lower() for s in (job.required_skills or [])]
+            cand_skills = [s.lower() for s in (candidate.extracted_skills or [])]
+            
+            if job_skills:
+                matched_skills = [s for s in job_skills if s in cand_skills]
+                skill_match_score = (len(matched_skills) / len(job_skills)) * 100.0
+                missing_skills = [s for s in job.required_skills if s.lower() not in cand_skills]
+            else:
+                skill_match_score = 100.0
+                missing_skills = []
+                
+            # 3. Recalculate experience score
+            exp_diff = (candidate.experience_years or 0) - job.experience_years
+            if exp_diff >= 0:
+                experience_match_score = 100.0
+            else:
+                experience_match_score = max(0.0, 100.0 + (exp_diff * 20.0))
+                
+            # 4. Education Score (Placeholder 100)
+            education_match_score = 100.0
+            
+            # 5. Calculate final weighted ATS score
+            ats_score = calculate_ats_score(
+                semantic_score=semantic_score,
+                skill_match=skill_match_score,
+                exp_match=experience_match_score,
+                edu_match=education_match_score
+            )
+            ats_score = min(100.0, max(0.0, ats_score))
+            
+            # Update MatchResult fields
+            match.semantic_score = semantic_score
+            match.skill_match_score = skill_match_score
+            match.experience_match_score = experience_match_score
+            match.education_match_score = education_match_score
+            match.ats_score = ats_score
+            match.missing_skills = missing_skills
+            match.ai_summary = f"Match score recalculated. Key strengths: {len(candidate.extracted_skills or [])} parsed skills."
+            
+        except Exception as e:
+            print(f"Failed to recalculate match result for candidate {candidate.id}: {str(e)}")
+            
+    db.commit()

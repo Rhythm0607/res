@@ -7,6 +7,7 @@ import Dashboard from '@/pages/Dashboard';
 import JobManagement from '@/pages/JobManagement';
 import ResumeChatbot from '@/pages/ResumeChatbot';
 import CandidateRanking from '@/pages/CandidateRanking';
+import Settings from '@/pages/Settings';
 import { AuthProvider } from '@/context/AuthContext';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import { GoogleOAuthProvider } from '@react-oauth/google';
@@ -30,6 +31,7 @@ function App() {
               <Route path="jobs" element={<JobManagement />} />
               <Route path="candidates" element={<CandidateRanking />} />
               <Route path="chat" element={<ResumeChatbot />} />
+              <Route path="settings" element={<Settings />} />
             </Route>
           </Route>
         </Routes>
