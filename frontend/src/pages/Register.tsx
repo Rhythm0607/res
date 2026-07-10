@@ -49,16 +49,30 @@ export default function Register() {
   };
 
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center p-6 font-sans">
-      <div className="w-full max-w-md bg-card rounded-[24px] p-8 shadow-soft border border-border">
-        {/* Brand Header */}
-        <div className="flex flex-col items-center mb-8">
-          <Link to="/" className="w-12 h-12 bg-primary/10 text-primary rounded-2xl flex items-center justify-center mb-4 hover:scale-105 transition-transform">
-            <BrainCircuit size={28} />
-          </Link>
-          <h2 className="text-2xl font-extrabold text-text tracking-tight">Create Account</h2>
-          <p className="text-sm text-muted font-medium mt-1">Get started with HireSense AI screening</p>
+    <div className="min-h-screen bg-[radial-gradient(circle_at_top_left,_rgba(226,251,108,0.28),_transparent_35%),linear-gradient(135deg,_#f7f8f4_0%,_#ebece8_100%)] flex items-center justify-center p-6 font-sans">
+      <div className="grid w-full max-w-5xl overflow-hidden rounded-[32px] border border-border bg-card shadow-[0_24px_80px_-35px_rgba(0,72,56,0.25)] lg:grid-cols-[1.05fr_0.95fr]">
+        <div className="hidden bg-secondary p-10 text-background lg:flex lg:flex-col lg:justify-between">
+          <div>
+            <div className="inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.24em] text-accent">
+              <BrainCircuit size={14} /> HireSense AI
+            </div>
+            <h2 className="mt-6 text-3xl font-black tracking-tight">Set up your recruiting workspace.</h2>
+            <p className="mt-3 max-w-md text-sm leading-7 text-background/80">Start with a polished recruiting hub that helps your team review talent faster and collaborate with less friction.</p>
+          </div>
+          <div className="rounded-[24px] border border-white/10 bg-white/10 p-5 text-sm text-background/80">
+            <p className="font-semibold text-background">Fast, structured onboarding</p>
+            <p className="mt-2">Bring your jobs, candidates, and interview workflow into one premium operating surface.</p>
+          </div>
         </div>
+
+        <div className="p-8 sm:p-10">
+          <div className="flex flex-col items-center mb-8">
+            <Link to="/" className="w-12 h-12 bg-primary/10 text-primary rounded-2xl flex items-center justify-center mb-4 hover:scale-105 transition-transform">
+              <BrainCircuit size={28} />
+            </Link>
+            <h2 className="text-2xl font-extrabold text-text tracking-tight">Create Account</h2>
+            <p className="text-sm text-muted font-medium mt-1">Get started with HireSense AI screening</p>
+          </div>
 
         {/* Error Alert */}
         {error && (
@@ -74,13 +88,12 @@ export default function Register() {
             <label className="block text-xs font-bold text-muted uppercase tracking-wider mb-1.5">Full Name</label>
             <div className="relative">
               <User className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted" size={16} />
-              <input 
-                type="text" 
+              <input
+                type="text"
                 placeholder="e.g. John Doe"
                 {...register('fullName')}
-                className={`w-full pl-10 pr-4 py-2.5 bg-background border rounded-xl outline-none text-sm font-semibold transition ${
-                  errors.fullName ? 'border-danger focus:ring-2 focus:ring-danger/10' : 'border-border focus:border-primary focus:ring-2 focus:ring-primary/10'
-                }`}
+                className={`w-full pl-10 pr-4 py-2.5 bg-background border rounded-xl outline-none text-sm font-semibold transition ${errors.fullName ? 'border-danger focus:ring-2 focus:ring-danger/10' : 'border-border focus:border-primary focus:ring-2 focus:ring-primary/10'
+                  }`}
               />
             </div>
             {errors.fullName && <p className="text-danger text-[11px] mt-1 font-medium">{errors.fullName.message}</p>}
@@ -91,13 +104,12 @@ export default function Register() {
             <label className="block text-xs font-bold text-muted uppercase tracking-wider mb-1.5">Work Email</label>
             <div className="relative">
               <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted" size={16} />
-              <input 
-                type="email" 
+              <input
+                type="email"
                 placeholder="you@company.com"
                 {...register('email')}
-                className={`w-full pl-10 pr-4 py-2.5 bg-background border rounded-xl outline-none text-sm font-semibold transition ${
-                  errors.email ? 'border-danger' : 'border-border focus:border-primary focus:ring-2 focus:ring-primary/10'
-                }`}
+                className={`w-full pl-10 pr-4 py-2.5 bg-background border rounded-xl outline-none text-sm font-semibold transition ${errors.email ? 'border-danger' : 'border-border focus:border-primary focus:ring-2 focus:ring-primary/10'
+                  }`}
               />
             </div>
             {errors.email && <p className="text-danger text-[11px] mt-1 font-medium">{errors.email.message}</p>}
@@ -108,16 +120,15 @@ export default function Register() {
             <label className="block text-xs font-bold text-muted uppercase tracking-wider mb-1.5">Password</label>
             <div className="relative">
               <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted" size={16} />
-              <input 
-                type={showPassword ? 'text' : 'password'} 
+              <input
+                type={showPassword ? 'text' : 'password'}
                 placeholder="••••••••"
                 {...register('password')}
-                className={`w-full pl-10 pr-10 py-2.5 bg-background border rounded-xl outline-none text-sm font-semibold transition ${
-                  errors.password ? 'border-danger' : 'border-border focus:border-primary focus:ring-2 focus:ring-primary/10'
-                }`}
+                className={`w-full pl-10 pr-10 py-2.5 bg-background border rounded-xl outline-none text-sm font-semibold transition ${errors.password ? 'border-danger' : 'border-border focus:border-primary focus:ring-2 focus:ring-primary/10'
+                  }`}
               />
-              <button 
-                type="button" 
+              <button
+                type="button"
                 onClick={() => setShowPassword(!showPassword)}
                 className="absolute right-3 top-1/2 -translate-y-1/2 text-muted hover:text-text transition"
               >
@@ -132,21 +143,20 @@ export default function Register() {
             <label className="block text-xs font-bold text-muted uppercase tracking-wider mb-1.5">Confirm Password</label>
             <div className="relative">
               <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted" size={16} />
-              <input 
-                type={showPassword ? 'text' : 'password'} 
+              <input
+                type={showPassword ? 'text' : 'password'}
                 placeholder="••••••••"
                 {...register('confirmPassword')}
-                className={`w-full pl-10 pr-4 py-2.5 bg-background border rounded-xl outline-none text-sm font-semibold transition ${
-                  errors.confirmPassword ? 'border-danger' : 'border-border focus:border-primary focus:ring-2 focus:ring-primary/10'
-                }`}
+                className={`w-full pl-10 pr-4 py-2.5 bg-background border rounded-xl outline-none text-sm font-semibold transition ${errors.confirmPassword ? 'border-danger' : 'border-border focus:border-primary focus:ring-2 focus:ring-primary/10'
+                  }`}
               />
             </div>
             {errors.confirmPassword && <p className="text-danger text-[11px] mt-1 font-medium">{errors.confirmPassword.message}</p>}
           </div>
 
           {/* Submit */}
-          <button 
-            type="submit" 
+          <button
+            type="submit"
             disabled={isSubmitting}
             className="w-full bg-primary hover:bg-primary-hover text-white font-semibold py-3 rounded-xl shadow-soft disabled:opacity-55 active:scale-95 transition flex items-center justify-center gap-2 mt-2"
           >
@@ -170,23 +180,23 @@ export default function Register() {
 
         <div className="grid grid-cols-2 gap-3">
           {/* Google */}
-          <button 
-            type="button" 
+          <button
+            type="button"
             onClick={() => alert("Google Single Sign-On is not configured for this enterprise demo.")}
             className="flex items-center justify-center gap-2.5 py-2.5 border border-border bg-card text-text hover:bg-background rounded-xl text-xs font-bold transition active:scale-95"
           >
             <svg className="w-4 h-4" viewBox="0 0 24 24">
-              <path fill="#EA4335" d="M12 5.04c1.66 0 3.2.57 4.38 1.69l3.27-3.27C17.67 1.48 14.98 1 12 1 7.35 1 3.37 3.68 1.42 7.57l3.85 2.99C6.18 7.37 8.87 5.04 12 5.04z"/>
-              <path fill="#4285F4" d="M23.49 12.27c0-.81-.07-1.59-.2-2.35H12v4.51h6.44c-.28 1.46-1.1 2.69-2.33 3.51l3.62 2.81c2.12-1.95 3.76-4.83 3.76-8.5z"/>
-              <path fill="#FBBC05" d="M5.27 14.44c-.25-.75-.39-1.56-.39-2.44s.14-1.69.39-2.44L1.42 6.57C.51 8.39 0 10.42 0 12.5s.51 4.11 1.42 5.93l3.85-2.99z"/>
-              <path fill="#34A853" d="M12 23c3.24 0 5.97-1.07 7.96-2.91l-3.62-2.81c-1.1.74-2.51 1.18-4.34 1.18-3.13 0-5.82-2.33-6.77-5.52L1.38 15.93C3.33 19.82 7.31 22.5 12 23z"/>
+              <path fill="#EA4335" d="M12 5.04c1.66 0 3.2.57 4.38 1.69l3.27-3.27C17.67 1.48 14.98 1 12 1 7.35 1 3.37 3.68 1.42 7.57l3.85 2.99C6.18 7.37 8.87 5.04 12 5.04z" />
+              <path fill="#4285F4" d="M23.49 12.27c0-.81-.07-1.59-.2-2.35H12v4.51h6.44c-.28 1.46-1.1 2.69-2.33 3.51l3.62 2.81c2.12-1.95 3.76-4.83 3.76-8.5z" />
+              <path fill="#FBBC05" d="M5.27 14.44c-.25-.75-.39-1.56-.39-2.44s.14-1.69.39-2.44L1.42 6.57C.51 8.39 0 10.42 0 12.5s.51 4.11 1.42 5.93l3.85-2.99z" />
+              <path fill="#34A853" d="M12 23c3.24 0 5.97-1.07 7.96-2.91l-3.62-2.81c-1.1.74-2.51 1.18-4.34 1.18-3.13 0-5.82-2.33-6.77-5.52L1.38 15.93C3.33 19.82 7.31 22.5 12 23z" />
             </svg>
             Google
           </button>
 
           {/* GitHub */}
-          <button 
-            type="button" 
+          <button
+            type="button"
             onClick={() => alert("GitHub Single Sign-On is not configured for this enterprise demo.")}
             className="flex items-center justify-center gap-2.5 py-2.5 border border-border bg-card text-text hover:bg-background rounded-xl text-xs font-bold transition active:scale-95"
           >
@@ -197,13 +207,14 @@ export default function Register() {
           </button>
         </div>
 
-        {/* Switch Link */}
-        <p className="mt-8 text-center text-sm font-semibold text-muted">
-          Already have an account?{' '}
-          <Link to="/login" className="text-primary hover:underline">
-            Sign In
-          </Link>
-        </p>
+          {/* Switch Link */}
+          <p className="mt-8 text-center text-sm font-semibold text-muted">
+            Already have an account?{' '}
+            <Link to="/login" className="text-primary hover:underline">
+              Sign In
+            </Link>
+          </p>
+        </div>
       </div>
     </div>
   );

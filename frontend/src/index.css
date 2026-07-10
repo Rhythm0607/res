@@ -1,17 +1,9 @@
 :root {
-  --background: 248 250 252; /* #F8FAFC */
-  --card: 255 255 255;       /* #FFFFFF */
-  --text: 15 23 42;          /* #0F172A */
-  --muted: 100 116 139;      /* #64748B */
-  --border: 226 232 240;     /* #E2E8F0 */
-}
-
-:root.dark, html.dark {
-  --background: 11 15 25;    /* #0B0F19 */
-  --card: 21 29 42;          /* #151D2A */
-  --text: 248 250 252;       /* #F8FAFC */
-  --muted: 148 163 184;      /* #94A3B8 */
-  --border: 30 41 59;        /* #1E293B */
+  --background: 235 237 232;  /* #EBEDE8 */
+  --card: 255 255 255;         /* #FFFFFF */
+  --text: 51 63 60;            /* #333F3C */
+  --muted: 107 122 119;
+  --border: 209 215 208;
 }
 
 @tailwind base;
@@ -19,25 +11,71 @@
 @tailwind utilities;
 
 @layer base {
+  * {
+    box-sizing: border-box;
+  }
   body {
-    @apply bg-background text-text antialiased transition-colors duration-200;
+    @apply bg-background text-text antialiased;
+    font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
   }
 }
 
-.glass-panel {
-  @apply bg-card/75 backdrop-blur-md border border-border shadow-glass;
+/* Sidebar nav link transition */
+.nav-link-active {
+  background-color: #E2FB6C;
+  color: #004838;
+  font-weight: 700;
 }
 
+.nav-link-inactive {
+  color: rgba(255,255,255,0.75);
+}
+
+.nav-link-inactive:hover {
+  background-color: #003b2d;
+  color: #ffffff;
+}
+
+/* Custom scrollbar - olive tinted */
 ::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+  width: 6px;
+  height: 6px;
 }
+
 ::-webkit-scrollbar-track {
-  @apply bg-transparent;
+  background: transparent;
 }
+
 ::-webkit-scrollbar-thumb {
-  @apply bg-muted/30 rounded-full;
+  background-color: rgba(0, 72, 56, 0.2);
+  border-radius: 99px;
 }
+
 ::-webkit-scrollbar-thumb:hover {
-  @apply bg-muted/50;
+  background-color: rgba(0, 72, 56, 0.4);
+}
+
+/* Accent glow for CTA buttons */
+.btn-accent {
+  background-color: #E2FB6C;
+  color: #004838;
+  font-weight: 700;
+  transition: background-color 0.2s, transform 0.1s;
+}
+
+.btn-accent:hover {
+  background-color: #d4f54e;
+  transform: translateY(-1px);
+}
+
+.btn-primary {
+  background-color: #004838;
+  color: #ffffff;
+  font-weight: 600;
+  transition: background-color 0.2s, transform 0.1s;
+}
+
+.btn-primary:hover {
+  background-color: #003b2d;
+  transform: translateY(-1px);
 }

@@ -10,7 +10,7 @@ export default function CandidateRanking() {
   const [jobs, setJobs] = useState<JobResponse[]>([]);
   const [candidates, setCandidates] = useState<CandidateMatchResponse[]>([]);
   const [selectedJobId, setSelectedJobId] = useState<number | null>(null);
-  
+
   const [loadingJobs, setLoadingJobs] = useState(true);
   const [loadingCandidates, setLoadingCandidates] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -19,7 +19,7 @@ export default function CandidateRanking() {
   const [activeCandidate, setActiveCandidate] = useState<CandidateMatchResponse | null>(null);
   const [modalTab, setModalTab] = useState<'match' | 'profile' | 'text' | 'questions'>('match');
   const [expandedCandidates, setExpandedCandidates] = useState<Record<number, boolean>>({});
-  
+
   // Interview Questions state
   const [questions, setQuestions] = useState<InterviewQuestion[]>([]);
   const [loadingQuestions, setLoadingQuestions] = useState(false);
@@ -61,7 +61,7 @@ export default function CandidateRanking() {
         setLoadingJobs(true);
         const data = await jobService.getJobs();
         setJobs(data);
-        
+
         // Check if there is a jobId in query parameters
         const queryJobId = searchParams.get('jobId');
         if (queryJobId) {
@@ -116,7 +116,7 @@ export default function CandidateRanking() {
     if (!selectedJobId) return;
     const confirmed = window.confirm("Are you sure you want to delete this candidate's resume and matching results? This will remove the file copy on disk and clean up database records.");
     if (!confirmed) return;
-    
+
     try {
       await resumeService.deleteCandidate(selectedJobId, candidateId);
       setCandidates(prev => prev.filter(c => c.candidate_id !== candidateId));
@@ -138,26 +138,23 @@ export default function CandidateRanking() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4">
-        <div>
-          <h1 className="text-3xl font-extrabold tracking-tight bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
-            Candidate AI Ranking
-          </h1>
-          <p className="text-muted font-medium text-sm mt-1">
-            Compare, rank, and score applicants against job requirements automatically using semantic AI.
-          </p>
-        </div>
+      <div className="rounded-[32px] border border-border bg-card/90 p-7 shadow-[0_24px_80px_-35px_rgba(0,72,56,0.22)] backdrop-blur">
+        <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+          <div>
+            <div className="inline-flex items-center gap-2 rounded-full bg-primary/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.24em] text-primary">
+              <Star size={14} /> AI ranking hub
+            </div>
+            <h1 className="mt-3 text-3xl font-black tracking-tight text-text">Candidate AI Ranking</h1>
+            <p className="mt-2 max-w-2xl text-sm font-medium leading-6 text-muted">Compare, rank, and score applicants against job requirements automatically using semantic AI.</p>
+          </div>
 
-        {/* Job Selection Dropdown */}
-        <div className="w-full md:w-auto flex items-center gap-3">
-          <div className="flex-1 md:flex-initial flex items-center gap-2 bg-card border border-border px-4 py-2.5 rounded-xl shadow-sm">
+          <div className="flex items-center gap-2 rounded-2xl border border-border bg-background/70 px-4 py-2.5 shadow-sm">
             <Briefcase size={16} className="text-muted" />
             <select
               value={selectedJobId || ''}
               onChange={handleJobChange}
               disabled={loadingJobs}
-              className="bg-transparent text-sm font-bold outline-none cursor-pointer text-text min-w-[200px]"
+              className="min-w-[220px] bg-transparent text-sm font-bold text-text outline-none"
             >
               {loadingJobs && <option>Loading jobs...</option>}
               {!loadingJobs && jobs.length === 0 && <option>No jobs created yet</option>}
@@ -185,7 +182,7 @@ export default function CandidateRanking() {
           <p className="text-muted text-sm font-semibold">Analyzing matches and fetching rankings...</p>
         </div>
       ) : candidates.length === 0 ? (
-        <div className="border border-border bg-card rounded-2xl p-16 text-center shadow-sm">
+        <div className="rounded-[28px] border border-border bg-card p-16 text-center shadow-soft">
           <div className="w-16 h-16 bg-primary/10 text-primary flex items-center justify-center rounded-full mx-auto mb-4">
             <Users size={28} />
           </div>
@@ -203,10 +200,10 @@ export default function CandidateRanking() {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {candidates.map((c, idx) => (
-            <div 
-              key={c.candidate_id} 
+            <div
+              key={c.candidate_id}
               onClick={() => handleOpenModal(c)}
-              className="relative bg-card rounded-2xl p-6 border border-border shadow-sm hover:shadow-md hover:border-primary/40 transition-all group flex flex-col justify-between cursor-pointer"
+              className="group relative flex cursor-pointer flex-col justify-between rounded-[24px] border border-border bg-card p-6 shadow-soft transition-all hover:border-primary/40 hover:shadow-[0_18px_60px_-28px_rgba(0,72,56,0.25)]"
             >
               {/* Highlight Rank 1 */}
               {idx === 0 && (
@@ -252,7 +249,7 @@ export default function CandidateRanking() {
                 {/* Candidate Info */}
                 <h3 className="font-bold text-lg text-text truncate">{c.name}</h3>
                 <p className="text-xs text-muted font-semibold mb-3 truncate">{c.email}</p>
-                
+
                 <div className="text-xs text-text font-semibold flex items-center gap-2 mb-4">
                   <span className="px-2 py-0.5 bg-background border border-border rounded">
                     {c.experience_years} years exp
@@ -265,8 +262,8 @@ export default function CandidateRanking() {
                 {/* Parsed Skills */}
                 <div className="flex flex-wrap gap-1.5 mb-6">
                   {(expandedCandidates[c.candidate_id] ? c.extracted_skills : c.extracted_skills.slice(0, 4)).map(skill => (
-                    <span 
-                      key={skill} 
+                    <span
+                      key={skill}
                       className="px-2.5 py-1 bg-background border border-border rounded-lg text-[10px] font-bold uppercase tracking-wide text-text"
                     >
                       {skill}
@@ -287,7 +284,7 @@ export default function CandidateRanking() {
               </div>
 
               {/* View Breakdown Action Button */}
-              <button 
+              <button
                 onClick={() => handleOpenModal(c)}
                 className="w-full py-2.5 bg-primary/5 text-primary font-bold rounded-xl text-sm group-hover:bg-primary group-hover:text-white transition"
               >
@@ -302,7 +299,7 @@ export default function CandidateRanking() {
       {activeCandidate && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           {/* Backdrop */}
-          <div 
+          <div
             onClick={() => setActiveCandidate(null)}
             className="fixed inset-0 bg-black/40 backdrop-blur-sm"
           />
@@ -315,7 +312,7 @@ export default function CandidateRanking() {
                 <h3 className="text-xl font-bold text-text">{activeCandidate.name}</h3>
                 <p className="text-xs text-muted mt-0.5">Matched for: <span className="font-bold text-text">{selectedJob?.title}</span></p>
               </div>
-              <button 
+              <button
                 onClick={() => setActiveCandidate(null)}
                 className="p-2 text-muted hover:text-text hover:bg-background rounded-lg transition"
               >
@@ -327,41 +324,37 @@ export default function CandidateRanking() {
             <div className="flex border-b border-border bg-background/30 px-6">
               <button
                 onClick={() => setModalTab('match')}
-                className={`py-3.5 px-4 text-xs font-extrabold border-b-2 uppercase tracking-wider transition ${
-                  modalTab === 'match'
+                className={`py-3.5 px-4 text-xs font-extrabold border-b-2 uppercase tracking-wider transition ${modalTab === 'match'
                     ? 'border-primary text-primary'
                     : 'border-transparent text-muted hover:text-text'
-                }`}
+                  }`}
               >
                 AI Match Score
               </button>
               <button
                 onClick={() => setModalTab('profile')}
-                className={`py-3.5 px-4 text-xs font-extrabold border-b-2 uppercase tracking-wider transition ${
-                  modalTab === 'profile'
+                className={`py-3.5 px-4 text-xs font-extrabold border-b-2 uppercase tracking-wider transition ${modalTab === 'profile'
                     ? 'border-primary text-primary'
                     : 'border-transparent text-muted hover:text-text'
-                }`}
+                  }`}
               >
                 Parsed Profile
               </button>
               <button
                 onClick={() => setModalTab('text')}
-                className={`py-3.5 px-4 text-xs font-extrabold border-b-2 uppercase tracking-wider transition ${
-                  modalTab === 'text'
+                className={`py-3.5 px-4 text-xs font-extrabold border-b-2 uppercase tracking-wider transition ${modalTab === 'text'
                     ? 'border-primary text-primary'
                     : 'border-transparent text-muted hover:text-text'
-                }`}
+                  }`}
               >
                 Raw Resume Text
               </button>
               <button
                 onClick={() => setModalTab('questions')}
-                className={`py-3.5 px-4 text-xs font-extrabold border-b-2 uppercase tracking-wider transition ${
-                  modalTab === 'questions'
+                className={`py-3.5 px-4 text-xs font-extrabold border-b-2 uppercase tracking-wider transition ${modalTab === 'questions'
                     ? 'border-primary text-primary'
                     : 'border-transparent text-muted hover:text-text'
-                }`}
+                  }`}
               >
                 Interview Prep
               </button>
@@ -387,7 +380,7 @@ export default function CandidateRanking() {
                 {/* Scoring Breakdown Bar Chart */}
                 <div className="space-y-4">
                   <h4 className="text-xs font-bold text-muted uppercase tracking-wider">Scoring Metrics Breakdown</h4>
-                  
+
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {/* Semantic Match */}
                     <div className="space-y-1.5">
@@ -449,7 +442,7 @@ export default function CandidateRanking() {
                         ))}
                       </div>
                     </div>
-                    
+
                     {activeCandidate.missing_skills.length > 0 && (
                       <div>
                         <span className="text-xs font-bold text-danger block mb-1.5">Missing Required Skills:</span>
@@ -572,22 +565,20 @@ export default function CandidateRanking() {
                       questions.map((q) => {
                         const isExpanded = expandedQuestionId === q.id;
                         return (
-                          <div 
-                            key={q.id} 
-                            className={`bg-background border rounded-2xl transition overflow-hidden ${
-                              isExpanded ? 'border-primary shadow-soft' : 'border-border hover:border-muted'
-                            }`}
+                          <div
+                            key={q.id}
+                            className={`bg-background border rounded-2xl transition overflow-hidden ${isExpanded ? 'border-primary shadow-soft' : 'border-border hover:border-muted'
+                              }`}
                           >
-                            <div 
+                            <div
                               onClick={() => setExpandedQuestionId(isExpanded ? null : q.id)}
                               className="p-5 flex items-start justify-between gap-4 cursor-pointer select-none"
                             >
                               <div className="space-y-2">
-                                <span className={`px-2.5 py-0.5 rounded-lg text-[9px] font-extrabold uppercase tracking-wider block w-fit ${
-                                  q.category === 'Technical' 
-                                    ? 'bg-primary/10 text-primary' 
+                                <span className={`px-2.5 py-0.5 rounded-lg text-[9px] font-extrabold uppercase tracking-wider block w-fit ${q.category === 'Technical'
+                                    ? 'bg-primary/10 text-primary'
                                     : 'bg-success/10 text-success'
-                                }`}>
+                                  }`}>
                                   {q.category} Question
                                 </span>
                                 <p className="font-bold text-sm text-text leading-relaxed">{q.question}</p>
@@ -619,7 +610,7 @@ export default function CandidateRanking() {
 
             {/* Footer */}
             <div className="p-6 border-t border-border bg-background/50 flex justify-end">
-              <button 
+              <button
                 onClick={() => setActiveCandidate(null)}
                 className="px-5 py-2.5 bg-primary text-white text-sm font-bold rounded-xl hover:bg-primary-hover shadow-md transition"
               >

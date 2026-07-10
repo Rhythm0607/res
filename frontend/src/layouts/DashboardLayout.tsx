@@ -1,6 +1,5 @@
 import { Outlet, Link, useLocation } from 'react-router-dom';
 import { LayoutDashboard, Briefcase, Users, MessageSquare, Settings, Bell, Search, BrainCircuit, LogOut } from 'lucide-react';
-import clsx from 'clsx';
 import { useAuth } from '../context/AuthContext';
 
 export default function DashboardLayout() {
@@ -16,66 +15,161 @@ export default function DashboardLayout() {
   ];
 
   return (
-    <div className="flex h-screen bg-background text-text overflow-hidden font-sans">
-      <aside className="w-64 bg-card border-r border-border flex flex-col z-20 shadow-sm">
-        <div className="h-20 flex items-center gap-2 px-6 font-bold text-2xl text-primary border-b border-border">
-          <BrainCircuit size={28} /> HireSense
+    <div className="flex h-screen overflow-hidden font-sans" style={{ backgroundColor: '#EBEDE8', color: '#333F3C' }}>
+      {/* Sidebar */}
+      <aside
+        className="w-64 flex flex-col z-20 flex-shrink-0"
+        style={{ backgroundColor: '#004838', boxShadow: '4px 0 24px rgba(0,72,56,0.15)' }}
+      >
+        {/* Logo */}
+        <div
+          className="h-20 flex items-center gap-2 px-6 font-extrabold text-xl flex-shrink-0"
+          style={{ color: '#E2FB6C', borderBottom: '1px solid rgba(255,255,255,0.1)' }}
+        >
+          <BrainCircuit size={26} />
+          HireSense
         </div>
-        <nav className="flex-1 px-4 py-6 space-y-2">
+
+        {/* Nav */}
+        <nav className="flex-1 px-3 py-5 space-y-1 overflow-y-auto">
           {navItems.map((item) => {
             const Icon = item.icon;
             const isActive = location.pathname.includes(item.path);
             return (
-              <Link key={item.name} to={item.path}
-                className={clsx(
-                  "flex items-center gap-3 px-4 py-3 rounded-xl transition-all font-medium",
-                  isActive ? "bg-primary/10 text-primary" : "text-muted hover:bg-background hover:text-text"
-                )}
+              <Link
+                key={item.name}
+                to={item.path}
+                className="flex items-center gap-3 px-4 py-3 rounded-xl transition-all font-semibold text-sm"
+                style={isActive
+                  ? { backgroundColor: '#E2FB6C', color: '#004838' }
+                  : { color: 'rgba(255,255,255,0.75)' }
+                }
+                onMouseEnter={(e) => {
+                  if (!isActive) {
+                    (e.currentTarget as HTMLElement).style.backgroundColor = '#003b2d';
+                    (e.currentTarget as HTMLElement).style.color = '#ffffff';
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (!isActive) {
+                    (e.currentTarget as HTMLElement).style.backgroundColor = 'transparent';
+                    (e.currentTarget as HTMLElement).style.color = 'rgba(255,255,255,0.75)';
+                  }
+                }}
               >
-                <Icon size={20} /> {item.name}
+                <Icon size={19} />
+                {item.name}
               </Link>
             );
           })}
         </nav>
-        <div className="p-6 border-t border-border flex items-center justify-between gap-3">
+
+        {/* User footer */}
+        <div
+          className="p-4 flex items-center justify-between gap-3 flex-shrink-0"
+          style={{ borderTop: '1px solid rgba(255,255,255,0.1)' }}
+        >
           <div className="flex items-center gap-3 overflow-hidden">
-            <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-primary to-secondary flex items-center justify-center font-bold text-white uppercase flex-shrink-0">
+            <div
+              className="w-9 h-9 rounded-full flex items-center justify-center font-bold text-sm uppercase flex-shrink-0"
+              style={{ backgroundColor: '#E2FB6C', color: '#004838' }}
+            >
               {user?.full_name?.charAt(0) || 'R'}
             </div>
             <div className="overflow-hidden">
-              <p className="font-semibold text-sm truncate">{user?.full_name || 'Recruiter Pro'}</p>
-              <p className="text-xs text-muted truncate">{user?.email || 'admin@hiresense.ai'}</p>
+              <p className="font-semibold text-sm truncate" style={{ color: '#ffffff' }}>
+                {user?.full_name || 'Recruiter Pro'}
+              </p>
+              <p className="text-xs truncate" style={{ color: 'rgba(255,255,255,0.55)' }}>
+                {user?.email || 'admin@hiresense.ai'}
+              </p>
             </div>
           </div>
-          <button 
-            onClick={logout} 
-            className="p-2 text-muted hover:text-danger hover:bg-danger/10 rounded-lg transition"
+          <button
+            onClick={logout}
+            className="p-2 rounded-lg transition-colors flex-shrink-0"
+            style={{ color: 'rgba(255,255,255,0.55)' }}
             title="Log Out"
+            onMouseEnter={(e) => {
+              (e.currentTarget as HTMLElement).style.backgroundColor = 'rgba(220,38,38,0.2)';
+              (e.currentTarget as HTMLElement).style.color = '#fca5a5';
+            }}
+            onMouseLeave={(e) => {
+              (e.currentTarget as HTMLElement).style.backgroundColor = 'transparent';
+              (e.currentTarget as HTMLElement).style.color = 'rgba(255,255,255,0.55)';
+            }}
           >
-            <LogOut size={18} />
+            <LogOut size={17} />
           </button>
         </div>
       </aside>
 
-      <main className="flex-1 flex flex-col relative z-10">
-        <header className="h-20 bg-card border-b border-border flex items-center justify-between px-8 shadow-sm">
+      {/* Main content */}
+      <main className="flex-1 flex flex-col relative z-10 min-w-0">
+        {/* Top header */}
+        <header
+          className="h-20 flex items-center justify-between px-8 flex-shrink-0"
+          style={{
+            backgroundColor: '#ffffff',
+            borderBottom: '1px solid #D1D7D0',
+            boxShadow: '0 2px 12px rgba(0,72,56,0.05)',
+          }}
+        >
+          {/* Search */}
           <div className="relative w-96">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted" size={18} />
-            <input type="text" placeholder="Search across HireSense..." 
-              className="w-full pl-10 pr-4 py-2.5 bg-background border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all text-sm font-medium" />
+            <Search
+              className="absolute left-3.5 top-1/2 -translate-y-1/2"
+              size={17}
+              style={{ color: '#6B7A77' }}
+            />
+            <input
+              type="text"
+              placeholder="Search across HireSense..."
+              className="w-full pl-10 pr-4 py-2.5 rounded-xl text-sm font-medium outline-none transition-all"
+              style={{
+                backgroundColor: '#EBEDE8',
+                border: '1.5px solid #D1D7D0',
+                color: '#333F3C',
+              }}
+              onFocus={(e) => {
+                e.currentTarget.style.borderColor = '#004838';
+                e.currentTarget.style.boxShadow = '0 0 0 3px rgba(0,72,56,0.1)';
+              }}
+              onBlur={(e) => {
+                e.currentTarget.style.borderColor = '#D1D7D0';
+                e.currentTarget.style.boxShadow = 'none';
+              }}
+            />
           </div>
-          <div className="flex items-center gap-4">
-            <button className="relative p-2.5 text-muted hover:bg-background rounded-xl transition">
+
+          {/* Right actions */}
+          <div className="flex items-center gap-3">
+            <button
+              className="relative p-2.5 rounded-xl transition-colors"
+              style={{ color: '#333F3C' }}
+              onMouseEnter={(e) => (e.currentTarget as HTMLElement).style.backgroundColor = '#EBEDE8'}
+              onMouseLeave={(e) => (e.currentTarget as HTMLElement).style.backgroundColor = 'transparent'}
+            >
               <Bell size={20} />
-              <span className="absolute top-2.5 right-2.5 w-2 h-2 bg-danger rounded-full border border-card"></span>
+              <span
+                className="absolute top-2 right-2 w-2 h-2 rounded-full"
+                style={{ backgroundColor: '#dc2626', border: '2px solid white' }}
+              />
             </button>
-            <Link to="/app/jobs?create=true" className="px-4 py-2 bg-primary text-white text-sm font-semibold rounded-xl shadow-soft hover:bg-primary/90 transition flex items-center justify-center">
+            <Link
+              to="/app/jobs?create=true"
+              className="px-5 py-2.5 text-sm font-bold rounded-xl transition-all"
+              style={{ backgroundColor: '#E2FB6C', color: '#004838' }}
+              onMouseEnter={(e) => (e.currentTarget as HTMLElement).style.backgroundColor = '#d4f54e'}
+              onMouseLeave={(e) => (e.currentTarget as HTMLElement).style.backgroundColor = '#E2FB6C'}
+            >
               + New Job
             </Link>
           </div>
         </header>
 
-        <div className="flex-1 overflow-auto p-8 bg-background">
+        {/* Page content */}
+        <div className="flex-1 overflow-auto p-8" style={{ backgroundColor: '#EBEDE8' }}>
           <Outlet />
         </div>
       </main>

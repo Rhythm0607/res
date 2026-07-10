@@ -51,16 +51,30 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center p-6 font-sans">
-      <div className="w-full max-w-md bg-card rounded-[24px] p-8 shadow-soft border border-border">
-        {/* Brand Header */}
-        <div className="flex flex-col items-center mb-8">
-          <Link to="/" className="w-12 h-12 bg-primary/10 text-primary rounded-2xl flex items-center justify-center mb-4 hover:scale-105 transition-transform">
-            <BrainCircuit size={28} />
-          </Link>
-          <h2 className="text-2xl font-extrabold text-text tracking-tight">Welcome Back</h2>
-          <p className="text-sm text-muted font-medium mt-1">Sign in to your enterprise ATS</p>
+    <div className="min-h-screen bg-[radial-gradient(circle_at_top_left,_rgba(226,251,108,0.28),_transparent_35%),linear-gradient(135deg,_#f7f8f4_0%,_#ebece8_100%)] flex items-center justify-center p-6 font-sans">
+      <div className="grid w-full max-w-5xl overflow-hidden rounded-[32px] border border-border bg-card shadow-[0_24px_80px_-35px_rgba(0,72,56,0.25)] lg:grid-cols-[1.05fr_0.95fr]">
+        <div className="hidden bg-secondary p-10 text-background lg:flex lg:flex-col lg:justify-between">
+          <div>
+            <div className="inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.24em] text-accent">
+              <BrainCircuit size={14} /> HireSense AI
+            </div>
+            <h2 className="mt-6 text-3xl font-black tracking-tight">Screen faster. Hire with confidence.</h2>
+            <p className="mt-3 max-w-md text-sm leading-7 text-background/80">Bring your recruiting intelligence together in one place with semantic matching, structured workflows, and AI-driven candidate coaching.</p>
+          </div>
+          <div className="rounded-[24px] border border-white/10 bg-white/10 p-5 text-sm text-background/80">
+            <p className="font-semibold text-background">Trusted by modern recruiting teams</p>
+            <p className="mt-2">“The experience feels premium and operationally focused from the first click.”</p>
+          </div>
         </div>
+
+        <div className="p-8 sm:p-10">
+          <div className="flex flex-col items-center mb-8">
+            <Link to="/" className="w-12 h-12 bg-primary/10 text-primary rounded-2xl flex items-center justify-center mb-4 hover:scale-105 transition-transform">
+              <BrainCircuit size={28} />
+            </Link>
+            <h2 className="text-2xl font-extrabold text-text tracking-tight">Welcome Back</h2>
+            <p className="text-sm text-muted font-medium mt-1">Sign in to your enterprise ATS</p>
+          </div>
 
         {/* Error Alert */}
         {error && (
@@ -76,13 +90,12 @@ export default function Login() {
             <label className="block text-xs font-bold text-muted uppercase tracking-wider mb-1.5">Work Email</label>
             <div className="relative">
               <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted" size={16} />
-              <input 
-                type="email" 
+              <input
+                type="email"
                 placeholder="hr@company.com"
                 {...register('email')}
-                className={`w-full pl-10 pr-4 py-2.5 bg-background border rounded-xl outline-none text-sm font-semibold transition ${
-                  errors.email ? 'border-danger' : 'border-border focus:border-primary focus:ring-2 focus:ring-primary/10'
-                }`}
+                className={`w-full pl-10 pr-4 py-2.5 bg-background border rounded-xl outline-none text-sm font-semibold transition ${errors.email ? 'border-danger' : 'border-border focus:border-primary focus:ring-2 focus:ring-primary/10'
+                  }`}
               />
             </div>
             {errors.email && <p className="text-danger text-[11px] mt-1 font-medium">{errors.email.message}</p>}
@@ -93,16 +106,15 @@ export default function Login() {
             <label className="block text-xs font-bold text-muted uppercase tracking-wider mb-1.5">Password</label>
             <div className="relative">
               <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted" size={16} />
-              <input 
-                type={showPassword ? 'text' : 'password'} 
+              <input
+                type={showPassword ? 'text' : 'password'}
                 placeholder="••••••••"
                 {...register('password')}
-                className={`w-full pl-10 pr-10 py-2.5 bg-background border rounded-xl outline-none text-sm font-semibold transition ${
-                  errors.password ? 'border-danger' : 'border-border focus:border-primary focus:ring-2 focus:ring-primary/10'
-                }`}
+                className={`w-full pl-10 pr-10 py-2.5 bg-background border rounded-xl outline-none text-sm font-semibold transition ${errors.password ? 'border-danger' : 'border-border focus:border-primary focus:ring-2 focus:ring-primary/10'
+                  }`}
               />
-              <button 
-                type="button" 
+              <button
+                type="button"
                 onClick={() => setShowPassword(!showPassword)}
                 className="absolute right-3 top-1/2 -translate-y-1/2 text-muted hover:text-text transition"
               >
@@ -115,14 +127,14 @@ export default function Login() {
           {/* Remember me & Forgot Password */}
           <div className="flex items-center justify-between text-sm font-semibold">
             <label className="flex items-center gap-2 cursor-pointer select-none">
-              <input 
-                type="checkbox" 
+              <input
+                type="checkbox"
                 {...register('rememberMe')}
-                className="rounded border-border text-primary focus:ring-primary/20 w-4 h-4 cursor-pointer" 
+                className="rounded border-border text-primary focus:ring-primary/20 w-4 h-4 cursor-pointer"
               />
               <span className="text-text">Remember me</span>
             </label>
-            <button 
+            <button
               type="button"
               onClick={() => alert("Password reset functionality is not configured in this demo.")}
               className="text-primary hover:underline"
@@ -132,8 +144,8 @@ export default function Login() {
           </div>
 
           {/* Submit */}
-          <button 
-            type="submit" 
+          <button
+            type="submit"
             disabled={isSubmitting}
             className="w-full bg-primary hover:bg-primary-hover text-white font-semibold py-3 rounded-xl shadow-soft disabled:opacity-55 active:scale-95 transition flex items-center justify-center gap-2"
           >
@@ -180,8 +192,8 @@ export default function Login() {
           </div>
 
           {/* GitHub */}
-          <button 
-            type="button" 
+          <button
+            type="button"
             onClick={() => alert("GitHub Single Sign-On is not configured for this enterprise demo.")}
             className="flex items-center justify-center gap-2.5 py-2.5 border border-border bg-card text-text hover:bg-background rounded-xl text-xs font-bold transition active:scale-95 w-full mt-1"
           >
@@ -192,13 +204,14 @@ export default function Login() {
           </button>
         </div>
 
-        {/* Switch Link */}
-        <p className="mt-8 text-center text-sm font-semibold text-muted">
-          New to HireSense?{' '}
-          <Link to="/register" className="text-primary hover:underline">
-            Create Account
-          </Link>
-        </p>
+          {/* Switch Link */}
+          <p className="mt-8 text-center text-sm font-semibold text-muted">
+            New to HireSense?{' '}
+            <Link to="/register" className="text-primary hover:underline">
+              Create Account
+            </Link>
+          </p>
+        </div>
       </div>
     </div>
   );

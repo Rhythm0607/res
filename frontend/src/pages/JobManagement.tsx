@@ -3,8 +3,8 @@ import { useSearchParams } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { 
-  Briefcase, MapPin, Search, Plus, Trash2, X, 
+import {
+  Briefcase, MapPin, Search, Plus, Trash2, X,
   DollarSign, ArrowUpDown, Filter, Edit2, Upload,
   UploadCloud, FileText, CheckCircle, AlertCircle, Trash, Loader2
 } from 'lucide-react';
@@ -135,7 +135,7 @@ export default function JobManagement() {
       }
     }
   };
-  
+
   // Search, Filter, Sort States
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedDept, setSelectedDept] = useState('All Departments');
@@ -286,16 +286,16 @@ export default function JobManagement() {
       const matchesSearch = job.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
         job.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
         job.location.toLowerCase().includes(searchQuery.toLowerCase());
-      
+
       const matchesDept = selectedDept === 'All Departments' || job.department === selectedDept;
       const matchesModel = selectedModel === 'All Work Models' || job.work_model === selectedModel;
-      
+
       return matchesSearch && matchesDept && matchesModel;
     })
     .sort((a, b) => {
       if (sortBy === 'title') {
-        return sortOrder === 'asc' 
-          ? a.title.localeCompare(b.title) 
+        return sortOrder === 'asc'
+          ? a.title.localeCompare(b.title)
           : b.title.localeCompare(a.title);
       } else {
         // Date sort
@@ -316,33 +316,34 @@ export default function JobManagement() {
 
   return (
     <div className="space-y-6">
-      {/* Header section */}
-      <div className="flex flex-col md:flex-row md:justify-between md:items-end gap-4">
-        <div>
-          <h1 className="text-3xl font-extrabold tracking-tight bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">Job Openings</h1>
-          <p className="text-muted font-medium text-sm mt-1">Add, update, and manage job descriptions and recruitments.</p>
-        </div>
-        <div>
-          <button 
+      <div className="rounded-[32px] border border-border bg-card/90 p-7 shadow-[0_24px_80px_-35px_rgba(0,72,56,0.22)] backdrop-blur">
+        <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+          <div>
+            <div className="inline-flex items-center gap-2 rounded-full bg-primary/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.24em] text-primary">
+              <Briefcase size={14} /> Hiring workspace
+            </div>
+            <h1 className="mt-3 text-3xl font-black tracking-tight text-text">Job Openings</h1>
+            <p className="mt-2 max-w-2xl text-sm font-medium leading-6 text-muted">Add, update, and manage job descriptions and recruitments from one refined operating surface.</p>
+          </div>
+          <button
             onClick={openCreateModal}
-            className="w-full md:w-auto flex items-center justify-center gap-2 px-5 py-3 bg-primary hover:bg-primary-hover text-white text-sm font-semibold rounded-xl shadow-lg shadow-primary/25 hover:shadow-xl hover:shadow-primary/30 active:scale-95 transition-all"
+            className="flex items-center justify-center gap-2 rounded-2xl bg-primary px-5 py-3 text-sm font-semibold text-white shadow-soft transition hover:bg-primary-hover"
           >
             <Plus size={18} /> Create Job Post
           </button>
         </div>
       </div>
 
-      {/* Filters & Search Toolbar */}
-      <div className="bg-card border border-border p-4 rounded-2xl flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-sm">
+      <div className="flex flex-col justify-between gap-4 rounded-[28px] border border-border bg-card p-4 shadow-soft md:flex-row md:items-center">
         {/* Search */}
         <div className="relative flex-1 max-w-md">
           <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted" size={18} />
-          <input 
-            type="text" 
-            placeholder="Search by title, description or location..." 
+          <input
+            type="text"
+            placeholder="Search by title, description or location..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-11 pr-4 py-2.5 bg-background border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all text-sm font-medium" 
+            className="w-full pl-11 pr-4 py-2.5 bg-background border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all text-sm font-medium"
           />
         </div>
 
@@ -350,7 +351,7 @@ export default function JobManagement() {
         <div className="flex flex-wrap items-center gap-3">
           <div className="flex items-center gap-1.5 bg-background border border-border px-3 py-2 rounded-xl">
             <Filter size={16} className="text-muted" />
-            <select 
+            <select
               value={selectedDept}
               onChange={(e) => setSelectedDept(e.target.value)}
               className="bg-transparent text-sm font-semibold outline-none cursor-pointer text-text"
@@ -363,7 +364,7 @@ export default function JobManagement() {
 
           <div className="flex items-center gap-1.5 bg-background border border-border px-3 py-2 rounded-xl">
             <Briefcase size={16} className="text-muted" />
-            <select 
+            <select
               value={selectedModel}
               onChange={(e) => setSelectedModel(e.target.value)}
               className="bg-transparent text-sm font-semibold outline-none cursor-pointer text-text"
@@ -374,11 +375,10 @@ export default function JobManagement() {
             </select>
           </div>
 
-          <button 
+          <button
             onClick={() => toggleSort('date')}
-            className={`flex items-center gap-1.5 px-3 py-2 rounded-xl border text-sm font-semibold transition ${
-              sortBy === 'date' ? 'bg-primary/5 border-primary/25 text-primary' : 'bg-background border-border text-muted hover:text-text'
-            }`}
+            className={`flex items-center gap-1.5 px-3 py-2 rounded-xl border text-sm font-semibold transition ${sortBy === 'date' ? 'bg-primary/5 border-primary/25 text-primary' : 'bg-background border-border text-muted hover:text-text'
+              }`}
           >
             <ArrowUpDown size={14} /> Date {sortBy === 'date' && (sortOrder === 'asc' ? '↑' : '↓')}
           </button>
@@ -394,7 +394,7 @@ export default function JobManagement() {
       ) : error ? (
         <div className="p-8 bg-danger/5 border border-danger/25 rounded-2xl text-center">
           <p className="text-danger font-semibold">{error}</p>
-          <button 
+          <button
             onClick={fetchJobs}
             className="mt-4 px-4 py-2 bg-danger text-white text-sm font-bold rounded-xl hover:bg-danger/95 transition"
           >
@@ -408,12 +408,12 @@ export default function JobManagement() {
           </div>
           <h3 className="text-lg font-bold text-text mb-1">No Jobs Found</h3>
           <p className="text-muted text-sm max-w-sm mx-auto font-medium">
-            {jobs.length === 0 
-              ? 'Get started by creating your very first job vacancy listing.' 
+            {jobs.length === 0
+              ? 'Get started by creating your very first job vacancy listing.'
               : 'Try adjusting your filters or search query to find matching jobs.'}
           </p>
           {jobs.length === 0 && (
-            <button 
+            <button
               onClick={openCreateModal}
               className="mt-6 inline-flex items-center gap-2 px-5 py-2.5 bg-primary text-white text-sm font-semibold rounded-xl hover:bg-primary/95 transition shadow-soft"
             >
@@ -422,7 +422,7 @@ export default function JobManagement() {
           )}
         </div>
       ) : (
-        <div className="bg-card rounded-2xl border border-border shadow-sm overflow-hidden">
+        <div className="overflow-hidden rounded-[28px] border border-border bg-card shadow-soft">
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse">
               <thead>
@@ -449,16 +449,15 @@ export default function JobManagement() {
                             <span className="text-border">•</span>
                             <span>{job.employment_type}</span>
                             <span className="text-border">•</span>
-                            <span className="flex items-center gap-0.5"><MapPin size={12}/>{job.location}</span>
+                            <span className="flex items-center gap-0.5"><MapPin size={12} />{job.location}</span>
                           </div>
                         </div>
                       </div>
                     </td>
                     <td className="p-4">
-                      <span className={`px-2.5 py-1 rounded-lg text-xs font-bold uppercase tracking-wide inline-block ${
-                        job.work_model === 'Remote' ? 'bg-success/10 text-success' : 
-                        job.work_model === 'Hybrid' ? 'bg-primary/10 text-primary' : 'bg-warning/10 text-warning'
-                      }`}>
+                      <span className={`px-2.5 py-1 rounded-lg text-xs font-bold uppercase tracking-wide inline-block ${job.work_model === 'Remote' ? 'bg-success/10 text-success' :
+                          job.work_model === 'Hybrid' ? 'bg-primary/10 text-primary' : 'bg-warning/10 text-warning'
+                        }`}>
                         {job.work_model}
                       </span>
                     </td>
@@ -470,21 +469,21 @@ export default function JobManagement() {
                     </td>
                     <td className="p-4 pr-6 text-right">
                       <div className="flex items-center justify-end gap-2">
-                        <button 
+                        <button
                           onClick={() => openUploadModal(job)}
                           className="p-2 text-muted hover:text-success hover:bg-success/10 rounded-lg transition"
                           title="Upload Resumes"
                         >
                           <Upload size={16} />
                         </button>
-                        <button 
+                        <button
                           onClick={() => handleEdit(job)}
                           className="p-2 text-muted hover:text-primary hover:bg-primary/10 rounded-lg transition"
                           title="Edit Job"
                         >
                           <Edit2 size={16} />
                         </button>
-                        <button 
+                        <button
                           onClick={() => handleDelete(job.id)}
                           className="p-2 text-muted hover:text-danger hover:bg-danger/10 rounded-lg transition"
                           title="Delete Job"
@@ -506,7 +505,7 @@ export default function JobManagement() {
         {isCreateModalOpen && (
           <>
             {/* Backdrop */}
-            <motion.div 
+            <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 0.4 }}
               exit={{ opacity: 0 }}
@@ -515,7 +514,7 @@ export default function JobManagement() {
             />
 
             {/* Sliding Panel */}
-            <motion.div 
+            <motion.div
               initial={{ x: '100%' }}
               animate={{ x: 0 }}
               exit={{ x: '100%' }}
@@ -530,7 +529,7 @@ export default function JobManagement() {
                     {editingJob ? 'Update job details for your active listing.' : 'Specify job details to start screening applicants.'}
                   </p>
                 </div>
-                <button 
+                <button
                   onClick={closeCreateModal}
                   className="p-2 text-muted hover:text-text hover:bg-background rounded-lg transition"
                 >
@@ -543,13 +542,12 @@ export default function JobManagement() {
                 {/* Job Title */}
                 <div>
                   <label className="block text-xs font-bold text-muted uppercase tracking-wider mb-2">Job Title *</label>
-                  <input 
-                    type="text" 
+                  <input
+                    type="text"
                     placeholder="e.g. Senior Full Stack Developer"
                     {...register('title')}
-                    className={`w-full px-4 py-2.5 bg-background border rounded-xl outline-none text-sm font-semibold transition ${
-                      errors.title ? 'border-danger focus:ring-2 focus:ring-danger/10' : 'border-border focus:border-primary focus:ring-2 focus:ring-primary/10'
-                    }`}
+                    className={`w-full px-4 py-2.5 bg-background border rounded-xl outline-none text-sm font-semibold transition ${errors.title ? 'border-danger focus:ring-2 focus:ring-danger/10' : 'border-border focus:border-primary focus:ring-2 focus:ring-primary/10'
+                      }`}
                   />
                   {errors.title && <p className="text-danger text-xs mt-1.5 font-medium">{errors.title.message}</p>}
                 </div>
@@ -558,20 +556,19 @@ export default function JobManagement() {
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="block text-xs font-bold text-muted uppercase tracking-wider mb-2">Department *</label>
-                    <input 
-                      type="text" 
+                    <input
+                      type="text"
                       placeholder="e.g. Engineering"
                       {...register('department')}
-                      className={`w-full px-4 py-2.5 bg-background border rounded-xl outline-none text-sm font-semibold transition ${
-                        errors.department ? 'border-danger' : 'border-border focus:border-primary'
-                      }`}
+                      className={`w-full px-4 py-2.5 bg-background border rounded-xl outline-none text-sm font-semibold transition ${errors.department ? 'border-danger' : 'border-border focus:border-primary'
+                        }`}
                     />
                     {errors.department && <p className="text-danger text-xs mt-1.5 font-medium">{errors.department.message}</p>}
                   </div>
 
                   <div>
                     <label className="block text-xs font-bold text-muted uppercase tracking-wider mb-2">Employment Type *</label>
-                    <select 
+                    <select
                       {...register('employment_type')}
                       className="w-full px-4 py-2.5 bg-background border border-border rounded-xl outline-none text-sm font-semibold text-text cursor-pointer focus:border-primary focus:ring-2 focus:ring-primary/10 transition"
                     >
@@ -587,20 +584,19 @@ export default function JobManagement() {
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="block text-xs font-bold text-muted uppercase tracking-wider mb-2">Location *</label>
-                    <input 
-                      type="text" 
+                    <input
+                      type="text"
                       placeholder="e.g. San Francisco, CA or Remote"
                       {...register('location')}
-                      className={`w-full px-4 py-2.5 bg-background border rounded-xl outline-none text-sm font-semibold transition ${
-                        errors.location ? 'border-danger' : 'border-border focus:border-primary'
-                      }`}
+                      className={`w-full px-4 py-2.5 bg-background border rounded-xl outline-none text-sm font-semibold transition ${errors.location ? 'border-danger' : 'border-border focus:border-primary'
+                        }`}
                     />
                     {errors.location && <p className="text-danger text-xs mt-1.5 font-medium">{errors.location.message}</p>}
                   </div>
 
                   <div>
                     <label className="block text-xs font-bold text-muted uppercase tracking-wider mb-2">Work Model *</label>
-                    <select 
+                    <select
                       {...register('work_model')}
                       className="w-full px-4 py-2.5 bg-background border border-border rounded-xl outline-none text-sm font-semibold text-text cursor-pointer focus:border-primary focus:ring-2 focus:ring-primary/10 transition"
                     >
@@ -615,26 +611,24 @@ export default function JobManagement() {
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="block text-xs font-bold text-muted uppercase tracking-wider mb-2">Required Experience (Years) *</label>
-                    <input 
-                      type="number" 
+                    <input
+                      type="number"
                       placeholder="e.g. 3"
                       {...register('experience_years')}
-                      className={`w-full px-4 py-2.5 bg-background border rounded-xl outline-none text-sm font-semibold transition ${
-                        errors.experience_years ? 'border-danger' : 'border-border focus:border-primary'
-                      }`}
+                      className={`w-full px-4 py-2.5 bg-background border rounded-xl outline-none text-sm font-semibold transition ${errors.experience_years ? 'border-danger' : 'border-border focus:border-primary'
+                        }`}
                     />
                     {errors.experience_years && <p className="text-danger text-xs mt-1.5 font-medium">{errors.experience_years.message}</p>}
                   </div>
 
                   <div>
                     <label className="block text-xs font-bold text-muted uppercase tracking-wider mb-2">Salary Range *</label>
-                    <input 
-                      type="text" 
+                    <input
+                      type="text"
                       placeholder="e.g. $120K - $150K"
                       {...register('salary_range')}
-                      className={`w-full px-4 py-2.5 bg-background border rounded-xl outline-none text-sm font-semibold transition ${
-                        errors.salary_range ? 'border-danger' : 'border-border focus:border-primary'
-                      }`}
+                      className={`w-full px-4 py-2.5 bg-background border rounded-xl outline-none text-sm font-semibold transition ${errors.salary_range ? 'border-danger' : 'border-border focus:border-primary'
+                        }`}
                     />
                     {errors.salary_range && <p className="text-danger text-xs mt-1.5 font-medium">{errors.salary_range.message}</p>}
                   </div>
@@ -643,13 +637,12 @@ export default function JobManagement() {
                 {/* Description */}
                 <div>
                   <label className="block text-xs font-bold text-muted uppercase tracking-wider mb-2">Job Description *</label>
-                  <textarea 
+                  <textarea
                     rows={5}
                     placeholder="Provide a detailed description of the role, responsibilities, and team..."
                     {...register('description')}
-                    className={`w-full px-4 py-2.5 bg-background border rounded-xl outline-none text-sm font-semibold transition resize-none ${
-                      errors.description ? 'border-danger' : 'border-border focus:border-primary'
-                    }`}
+                    className={`w-full px-4 py-2.5 bg-background border rounded-xl outline-none text-sm font-semibold transition resize-none ${errors.description ? 'border-danger' : 'border-border focus:border-primary'
+                      }`}
                   />
                   {errors.description && <p className="text-danger text-xs mt-1.5 font-medium">{errors.description.message}</p>}
                 </div>
@@ -657,13 +650,12 @@ export default function JobManagement() {
                 {/* Skills - Required */}
                 <div>
                   <label className="block text-xs font-bold text-muted uppercase tracking-wider mb-2">Required Skills * (comma-separated)</label>
-                  <input 
-                    type="text" 
+                  <input
+                    type="text"
                     placeholder="e.g. React, Node.js, TypeScript, PostgreSQL"
                     {...register('required_skills_raw')}
-                    className={`w-full px-4 py-2.5 bg-background border rounded-xl outline-none text-sm font-semibold transition ${
-                      errors.required_skills_raw ? 'border-danger' : 'border-border focus:border-primary'
-                    }`}
+                    className={`w-full px-4 py-2.5 bg-background border rounded-xl outline-none text-sm font-semibold transition ${errors.required_skills_raw ? 'border-danger' : 'border-border focus:border-primary'
+                      }`}
                   />
                   <p className="text-[11px] text-muted font-medium mt-1">Separate skills with commas (e.g., Python, Docker, AWS)</p>
                   {errors.required_skills_raw && <p className="text-danger text-xs mt-1.5 font-medium">{errors.required_skills_raw.message}</p>}
@@ -672,8 +664,8 @@ export default function JobManagement() {
                 {/* Skills - Preferred */}
                 <div>
                   <label className="block text-xs font-bold text-muted uppercase tracking-wider mb-2">Preferred Skills (comma-separated, optional)</label>
-                  <input 
-                    type="text" 
+                  <input
+                    type="text"
                     placeholder="e.g. AWS, Kubernetes, GraphQL"
                     {...register('preferred_skills_raw')}
                     className="w-full px-4 py-2.5 bg-background border border-border rounded-xl outline-none text-sm font-semibold focus:border-primary focus:ring-2 focus:ring-primary/10 transition"
@@ -684,14 +676,14 @@ export default function JobManagement() {
 
               {/* Sticky Footer */}
               <div className="p-6 border-t border-border flex items-center justify-end gap-3 bg-background/50">
-                <button 
+                <button
                   type="button"
                   onClick={closeCreateModal}
                   className="px-5 py-2.5 border border-border text-text text-sm font-semibold rounded-xl hover:bg-background transition"
                 >
                   Cancel
                 </button>
-                <button 
+                <button
                   onClick={handleSubmit(onSubmit)}
                   disabled={isSubmitting}
                   className="px-5 py-2.5 bg-primary text-white text-sm font-semibold rounded-xl hover:bg-primary-hover shadow-lg shadow-primary/25 disabled:opacity-55 active:scale-95 transition flex items-center justify-center gap-2"
@@ -716,7 +708,7 @@ export default function JobManagement() {
         {uploadingJob && (
           <>
             {/* Backdrop */}
-            <motion.div 
+            <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 0.4 }}
               exit={{ opacity: 0 }}
@@ -725,7 +717,7 @@ export default function JobManagement() {
             />
 
             {/* Modal Dialog */}
-            <motion.div 
+            <motion.div
               initial={{ opacity: 0, scale: 0.95, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 20 }}
@@ -743,7 +735,7 @@ export default function JobManagement() {
                     Position: <span className="font-bold text-text">{uploadingJob.title}</span>
                   </p>
                 </div>
-                <button 
+                <button
                   onClick={closeUploadModal}
                   className="p-2 text-muted hover:text-text hover:bg-background rounded-lg transition"
                 >
@@ -754,19 +746,18 @@ export default function JobManagement() {
               {/* Body */}
               <div className="p-6 overflow-y-auto space-y-6">
                 {/* Drag & Drop Zone */}
-                <div 
+                <div
                   onDragEnter={handleDrag}
                   onDragOver={handleDrag}
                   onDragLeave={handleDrag}
                   onDrop={handleDrop}
-                  className={`border-2 border-dashed rounded-2xl p-8 flex flex-col items-center justify-center text-center transition-all cursor-pointer relative ${
-                    dragActive 
-                      ? 'border-primary bg-primary/5 scale-[1.02]' 
+                  className={`border-2 border-dashed rounded-2xl p-8 flex flex-col items-center justify-center text-center transition-all cursor-pointer relative ${dragActive
+                      ? 'border-primary bg-primary/5 scale-[1.02]'
                       : 'border-border hover:border-primary/50 hover:bg-background/40'
-                  }`}
+                    }`}
                 >
-                  <input 
-                    type="file" 
+                  <input
+                    type="file"
                     multiple
                     accept=".pdf,.docx"
                     onChange={handleFileInput}
@@ -791,7 +782,7 @@ export default function JobManagement() {
                   <div className="space-y-3">
                     <div className="flex items-center justify-between text-xs font-bold text-muted uppercase tracking-wider">
                       <span>Resumes ({uploadFiles.length})</span>
-                      <button 
+                      <button
                         onClick={() => setUploadFiles([])}
                         className="text-danger hover:underline normal-case font-bold"
                       >
@@ -801,15 +792,14 @@ export default function JobManagement() {
 
                     <div className="space-y-2 max-h-60 overflow-y-auto pr-1">
                       {uploadFiles.map((fileObj) => (
-                        <div 
+                        <div
                           key={fileObj.id}
                           className="p-3 bg-background border border-border rounded-xl flex items-center justify-between gap-4 shadow-sm"
                         >
                           <div className="flex items-center gap-3 min-w-0 flex-1">
-                            <div className={`p-2 rounded-lg ${
-                              fileObj.status === 'success' ? 'bg-success/15 text-success' :
-                              fileObj.status === 'error' ? 'bg-danger/15 text-danger' : 'bg-primary/10 text-primary'
-                            }`}>
+                            <div className={`p-2 rounded-lg ${fileObj.status === 'success' ? 'bg-success/15 text-success' :
+                                fileObj.status === 'error' ? 'bg-danger/15 text-danger' : 'bg-primary/10 text-primary'
+                              }`}>
                               <FileText size={18} />
                             </div>
                             <div className="min-w-0 flex-1">
@@ -817,17 +807,17 @@ export default function JobManagement() {
                               <p className="text-xs text-muted font-semibold">
                                 {(fileObj.file.size / (1024 * 1024)).toFixed(2)} MB
                               </p>
-                              
+
                               {/* Progress bar */}
                               {fileObj.status === 'uploading' && (
                                 <div className="w-full bg-border h-1.5 rounded-full mt-2 overflow-hidden">
-                                  <div 
+                                  <div
                                     className="bg-primary h-full rounded-full transition-all duration-300"
                                     style={{ width: `${fileObj.progress}%` }}
                                   />
                                 </div>
                               )}
-                              
+
                               {fileObj.status === 'error' && (
                                 <p className="text-[11px] text-danger font-medium mt-1 flex items-center gap-1">
                                   <AlertCircle size={12} /> {fileObj.error}
@@ -844,7 +834,7 @@ export default function JobManagement() {
                               <Loader2 size={16} className="text-primary animate-spin flex-shrink-0" />
                             )}
                             {(fileObj.status === 'pending' || fileObj.status === 'error') && (
-                              <button 
+                              <button
                                 onClick={() => removeFile(fileObj.id)}
                                 className="p-1.5 text-muted hover:text-danger hover:bg-danger/10 rounded-lg transition"
                               >
@@ -861,7 +851,7 @@ export default function JobManagement() {
 
               {/* Footer */}
               <div className="p-6 border-t border-border flex items-center justify-between bg-background/50">
-                <a 
+                <a
                   href={`/app/candidates?jobId=${uploadingJob.id}`}
                   onClick={(e) => {
                     e.preventDefault();
@@ -872,15 +862,15 @@ export default function JobManagement() {
                 >
                   View candidates for this position →
                 </a>
-                
+
                 <div className="flex items-center gap-3">
-                  <button 
+                  <button
                     onClick={closeUploadModal}
                     className="px-4 py-2 border border-border text-text text-xs font-bold rounded-lg hover:bg-background transition"
                   >
                     Close
                   </button>
-                  <button 
+                  <button
                     onClick={startUploads}
                     disabled={uploadFiles.filter(f => f.status === 'pending').length === 0}
                     className="px-4 py-2 bg-primary text-white text-xs font-bold rounded-lg hover:bg-primary-hover shadow-md disabled:opacity-50 transition"

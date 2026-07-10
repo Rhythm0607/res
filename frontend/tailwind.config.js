@@ -7,12 +7,19 @@ export default {
   theme: {
     extend: {
       colors: {
-        primary: "#4F46E5",
-        secondary: "#60A5FA",
-        accent: "#A7F3D0",
-        success: "#10B981",
-        warning: "#F59E0B",
-        danger: "#EF4444",
+        primary: {
+          DEFAULT: "#004838",
+          hover: "#003b2d",
+        },
+        secondary: "#073127",
+        accent: {
+          DEFAULT: "#E2FB6C",
+          hover: "#d4f54e",
+        },
+        neutral: "#333F3C",
+        success: "#16a34a",
+        warning: "#ca8a04",
+        danger: "#dc2626",
         background: "rgb(var(--background) / <alpha-value>)",
         card: "rgb(var(--card) / <alpha-value>)",
         text: "rgb(var(--text) / <alpha-value>)",
@@ -20,19 +27,22 @@ export default {
         border: "rgb(var(--border) / <alpha-value>)",
       },
       backgroundImage: {
-        'hero-gradient': 'linear-gradient(135deg, #EEF2FF, #DBEAFE, #DCFCE7)',
+        'brand-gradient': 'linear-gradient(135deg, #004838, #073127)',
       },
       borderRadius: {
         'xl': '16px',
         '2xl': '24px',
+        '3xl': '32px',
       },
       boxShadow: {
-        'glass': '0 4px 30px rgba(0, 0, 0, 0.1)',
-        'soft': '0 10px 40px -10px rgba(0,0,0,0.08)',
+        'glass': '0 4px 30px rgba(0,72,56,0.08)',
+        'soft': '0 10px 40px -10px rgba(0,72,56,0.12)',
+        'floating': '0 20px 50px -20px rgba(0,72,56,0.18)',
+        'card': '0 2px 12px rgba(0,72,56,0.06)',
       },
       fontFamily: {
-        sans: ['Inter', 'system-ui', 'sans-serif'],
-      }
+        sans: ['Plus Jakarta Sans', 'system-ui', 'sans-serif'],
+      },
     },
   },
   plugins: [],

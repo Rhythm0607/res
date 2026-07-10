@@ -14,16 +14,16 @@ export default function ResumeChatbot() {
   const [searchParams, setSearchParams] = useSearchParams();
   const [jobs, setJobs] = useState<JobResponse[]>([]);
   const [candidates, setCandidates] = useState<CandidateMatchResponse[]>([]);
-  
+
   const [selectedJobId, setSelectedJobId] = useState<number | null>(null);
   const [selectedCandidateId, setSelectedCandidateId] = useState<number | null>(null);
-  
+
   const [messages, setMessages] = useState<ChatMessage[]>([
     { role: 'ai', content: 'Hello! I am your AI Recruiter Assistant. Please select a job and candidate from the sidebar context to begin chatting with their resume.' }
   ]);
   const [input, setInput] = useState('');
   const [sessionId, setSessionId] = useState<string | null>(null);
-  
+
   const [loadingJobs, setLoadingJobs] = useState(true);
   const [loadingCandidates, setLoadingCandidates] = useState(false);
   const [initializingChain, setInitializingChain] = useState(false);
@@ -41,11 +41,11 @@ export default function ResumeChatbot() {
         // Check if redirect query params are present
         const queryJobId = searchParams.get('jobId');
         const queryCandidateId = searchParams.get('candidateId');
-        
+
         if (queryJobId) {
           const parsedJobId = parseInt(queryJobId, 10);
           setSelectedJobId(parsedJobId);
-          
+
           if (queryCandidateId) {
             const parsedCandidateId = parseInt(queryCandidateId, 10);
             setSelectedCandidateId(parsedCandidateId);
@@ -89,7 +89,7 @@ export default function ResumeChatbot() {
             return;
           }
         }
-        
+
         // Reset chatbot state since job context changed manually
         setSelectedCandidateId(null);
         setSessionId(null);
@@ -115,22 +115,22 @@ export default function ResumeChatbot() {
       setMessages([
         { role: 'ai', content: `Vectorizing and preparing the RAG engine for ${candidateName}'s resume...` }
       ]);
-      
+
       const res = await resumeService.initializeChatSession(candidateId);
       setSessionId(res.session_id);
       setMessages([
-        { 
-          role: 'ai', 
-          content: `Success! I have successfully loaded and vectorized the complete resume of ${res.candidate_name}.\n\nWhat would you like to know about their projects, technical skills, or employment history?` 
+        {
+          role: 'ai',
+          content: `Success! I have successfully loaded and vectorized the complete resume of ${res.candidate_name}.\n\nWhat would you like to know about their projects, technical skills, or employment history?`
         }
       ]);
     } catch (err: any) {
       console.error('Failed to initialize chat session:', err);
       setSessionId(null);
       setMessages([
-        { 
-          role: 'ai', 
-          content: `Could not load this candidate's resume for chat. Please make sure the backend is active and the resume text has been parsed.` 
+        {
+          role: 'ai',
+          content: `Could not load this candidate's resume for chat. Please make sure the backend is active and the resume text has been parsed.`
         }
       ]);
       setError(err.response?.data?.detail || 'Failed to initialize AI Chat session.');
@@ -150,7 +150,7 @@ export default function ResumeChatbot() {
 
     const candidateId = parseInt(val, 10);
     setSelectedCandidateId(candidateId);
-    
+
     const candidateName = candidates.find(c => c.candidate_id === candidateId)?.name || 'Candidate';
     handleInitializeSession(candidateId, candidateName);
   };
@@ -167,7 +167,7 @@ export default function ResumeChatbot() {
   // Send RAG chat message
   const sendMessage = async () => {
     if (!input.trim() || !sessionId) return;
-    
+
     const userMsg = input.trim();
     setMessages(prev => [...prev, { role: 'user', content: userMsg }]);
     setInput('');
@@ -188,15 +188,15 @@ export default function ResumeChatbot() {
         question: userMsg,
         chat_history: chatHistory
       });
-      
+
       setMessages(prev => [...prev, { role: 'ai', content: response.data.answer }]);
     } catch (err: any) {
       console.error('Failed to query AI RAG chatbot:', err);
       setMessages(prev => [
-        ...prev, 
-        { 
-          role: 'ai', 
-          content: err.response?.data?.detail || "I experienced an error retrieving information from the model. Please check your API key quota configurations." 
+        ...prev,
+        {
+          role: 'ai',
+          content: err.response?.data?.detail || "I experienced an error retrieving information from the model. Please check your API key quota configurations."
         }
       ]);
     } finally {
@@ -207,15 +207,15 @@ export default function ResumeChatbot() {
   const activeCandidate = candidates.find(c => c.candidate_id === selectedCandidateId);
 
   return (
-    <div className="h-[calc(100vh-140px)] flex gap-6">
+    <div className="flex min-h-[calc(100vh-160px)] gap-6">
       {/* Sidebar: Candidate Selector */}
-      <div className="w-80 bg-card rounded-[24px] border border-border p-6 flex flex-col shadow-sm">
+      <div className="flex w-80 flex-col rounded-[28px] border border-border bg-card p-6 shadow-soft">
         <div className="mb-6">
-          <div className="flex items-center gap-2 mb-2">
+          <div className="mb-2 flex items-center gap-2">
             <MessageSquare size={18} className="text-primary" />
-            <h3 className="font-bold text-lg text-text">Chat Context</h3>
+            <h3 className="text-lg font-black text-text">Chat Context</h3>
           </div>
-          <p className="text-xs text-muted font-medium">Select a job and candidate to initialize the RAG vector engine.</p>
+          <p className="text-xs font-medium leading-5 text-muted">Select a job and candidate to initialize the RAG vector engine.</p>
         </div>
 
         {error && (
@@ -282,7 +282,7 @@ export default function ResumeChatbot() {
             <FileText className="text-primary mt-0.5" size={18} />
             <div className="overflow-hidden">
               <p className="font-bold text-sm text-text truncate w-full">{activeCandidate?.name || 'Selected Candidate'}</p>
-              
+
               {initializingChain ? (
                 <p className="text-xs text-primary font-semibold mt-1 flex items-center gap-1.5 animate-pulse">
                   <span className="w-2 h-2 bg-primary rounded-full inline-block animate-ping"></span>
@@ -313,10 +313,10 @@ export default function ResumeChatbot() {
               "Evaluate this candidate's fit for the role.",
               "Are there any resume gap concerns?"
             ].map(p => (
-              <button 
-                key={p} 
-                onClick={() => setInput(p)} 
-                disabled={!sessionId || sendingMessage} 
+              <button
+                key={p}
+                onClick={() => setInput(p)}
+                disabled={!sessionId || sendingMessage}
                 className="w-full text-left px-4 py-2.5 bg-background border border-border rounded-xl text-xs font-semibold text-text hover:border-primary hover:text-primary transition disabled:opacity-50 disabled:hover:border-border disabled:hover:text-text"
               >
                 {p}
@@ -327,20 +327,20 @@ export default function ResumeChatbot() {
       </div>
 
       {/* Main Chat Layout Area */}
-      <div className="flex-1 bg-card rounded-[24px] border border-border flex flex-col overflow-hidden shadow-sm">
+      <div className="flex flex-1 flex-col overflow-hidden rounded-[28px] border border-border bg-card shadow-soft">
         {/* Chat Messages Log */}
-        <div className="flex-1 overflow-y-auto p-6 space-y-6">
+        <div className="flex-1 space-y-6 overflow-y-auto bg-[radial-gradient(circle_at_top_left,_rgba(226,251,108,0.18),_transparent_30%)] p-6">
           {messages.map((msg, idx) => (
             <div key={idx} className={`flex gap-4 ${msg.role === 'ai' ? '' : 'flex-row-reverse'}`}>
               <div className={`w-10 h-10 rounded-2xl flex items-center justify-center shrink-0 shadow-sm ${msg.role === 'ai' ? 'bg-primary/10 text-primary' : 'bg-primary text-white'}`}>
                 {msg.role === 'ai' ? <Bot size={20} /> : <User size={20} />}
               </div>
-              <div className={`max-w-[80%] p-4 rounded-[20px] ${msg.role === 'ai' ? 'bg-background border border-border text-text rounded-tl-sm' : 'bg-primary text-white rounded-tr-sm shadow-soft'}`}>
+              <div className={`max-w-[80%] rounded-[20px] p-4 ${msg.role === 'ai' ? 'rounded-tl-sm border border-border bg-background text-text' : 'rounded-tr-sm bg-primary text-white shadow-soft'}`}>
                 <p className="text-sm font-medium leading-relaxed whitespace-pre-wrap">{msg.content}</p>
               </div>
             </div>
           ))}
-          
+
           {/* AI Generation Loader */}
           {sendingMessage && (
             <div className="flex gap-4">
@@ -357,26 +357,26 @@ export default function ResumeChatbot() {
         </div>
 
         {/* Input Message Box */}
-        <div className="p-5 bg-card border-t border-border">
+        <div className="border-t border-border bg-background/70 p-5">
           <div className="flex gap-3 relative">
-            <input 
-              type="text" 
+            <input
+              type="text"
               value={input}
               onChange={e => setInput(e.target.value)}
               onKeyDown={e => e.key === 'Enter' && sendMessage()}
               disabled={!sessionId || sendingMessage}
               placeholder={
-                initializingChain 
-                  ? "Indexing resume content... please wait..." 
-                  : sessionId 
-                    ? `Ask me anything about ${activeCandidate?.name || 'the candidate'}...` 
+                initializingChain
+                  ? "Indexing resume content... please wait..."
+                  : sessionId
+                    ? `Ask me anything about ${activeCandidate?.name || 'the candidate'}...`
                     : "Please select a candidate to begin chatting"
-              } 
-              className="flex-1 bg-background border border-border rounded-xl px-5 py-3.5 pr-14 focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition font-medium text-sm disabled:opacity-50 disabled:cursor-not-allowed text-text placeholder-muted"
+              }
+              className="flex-1 rounded-2xl border border-border bg-card px-5 py-3.5 pr-14 text-sm font-medium text-text transition placeholder-muted focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 disabled:cursor-not-allowed disabled:opacity-50"
             />
-            <button 
-              onClick={sendMessage} 
-              disabled={!sessionId || sendingMessage || !input.trim()} 
+            <button
+              onClick={sendMessage}
+              disabled={!sessionId || sendingMessage || !input.trim()}
               className="absolute right-2 top-2 bottom-2 aspect-square bg-primary text-white rounded-lg flex items-center justify-center hover:bg-primary-hover disabled:opacity-50 transition shadow-sm"
             >
               <Send size={18} />
