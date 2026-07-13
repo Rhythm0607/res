@@ -4,7 +4,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import {
-  Briefcase, MapPin, Search, Plus, Trash2, X,
+  Briefcase, MapPin, Search, Plus, Trash2, X, Users,
   DollarSign, ArrowUpDown, Filter, Edit2, Upload,
   UploadCloud, FileText, CheckCircle, AlertCircle, Trash, Loader2
 } from 'lucide-react';
@@ -140,6 +140,9 @@ export default function JobManagement() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedDept, setSelectedDept] = useState('All Departments');
   const [selectedModel, setSelectedModel] = useState('All Work Models');
+  const [selectedLocation, setSelectedLocation] = useState('All Locations');
+  const [selectedEmpType, setSelectedEmpType] = useState('All Employment Types');
+  const [showFilters, setShowFilters] = useState(false);
   const [sortBy, setSortBy] = useState<'title' | 'date'>('date');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
 
@@ -277,8 +280,44 @@ export default function JobManagement() {
   };
 
   // Departments List for filter dropdown
-  const departments = ['All Departments', ...Array.from(new Set(jobs.map(j => j.department)))];
+  const departments = [
+    'All Departments',
+    ...Array.from(
+      new Set(
+        jobs.map(j => {
+          const dept = j.department.trim();
+          return dept ? dept.charAt(0).toUpperCase() + dept.slice(1).toLowerCase() : '';
+        }).filter(Boolean)
+      )
+    )
+  ];
   const workModels = ['All Work Models', 'Remote', 'Hybrid', 'Onsite'];
+
+  // Locations List for filter dropdown (case-insensitive Title Case)
+  const locations = [
+    'All Locations',
+    ...Array.from(
+      new Set(
+        jobs.map(j => {
+          const loc = j.location.trim();
+          return loc ? loc.charAt(0).toUpperCase() + loc.slice(1).toLowerCase() : '';
+        }).filter(Boolean)
+      )
+    )
+  ];
+
+  // Employment Types List for filter dropdown
+  const employmentTypes = [
+    'All Employment Types',
+    ...Array.from(
+      new Set(
+        jobs.map(j => {
+          const type = j.employment_type.trim();
+          return type ? type.charAt(0).toUpperCase() + type.slice(1).toLowerCase() : '';
+        }).filter(Boolean)
+      )
+    )
+  ];
 
   // Filtered & Sorted Jobs
   const filteredJobs = jobs
@@ -287,10 +326,17 @@ export default function JobManagement() {
         job.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
         job.location.toLowerCase().includes(searchQuery.toLowerCase());
 
-      const matchesDept = selectedDept === 'All Departments' || job.department === selectedDept;
+      const matchesDept = selectedDept === 'All Departments' || 
+        job.department.trim().toLowerCase() === selectedDept.toLowerCase();
       const matchesModel = selectedModel === 'All Work Models' || job.work_model === selectedModel;
+      
+      const matchesLocation = selectedLocation === 'All Locations' ||
+        job.location.trim().toLowerCase() === selectedLocation.toLowerCase();
+        
+      const matchesEmpType = selectedEmpType === 'All Employment Types' ||
+        job.employment_type.trim().toLowerCase() === selectedEmpType.toLowerCase();
 
-      return matchesSearch && matchesDept && matchesModel;
+      return matchesSearch && matchesDept && matchesModel && matchesLocation && matchesEmpType;
     })
     .sort((a, b) => {
       if (sortBy === 'title') {
@@ -334,55 +380,152 @@ export default function JobManagement() {
         </div>
       </div>
 
-      <div className="flex flex-col justify-between gap-4 rounded-[28px] border border-border bg-card p-4 shadow-soft md:flex-row md:items-center">
-        {/* Search */}
-        <div className="relative flex-1 max-w-md">
-          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted" size={18} />
-          <input
-            type="text"
-            placeholder="Search by title, description or location..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-11 pr-4 py-2.5 bg-background border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all text-sm font-medium"
-          />
-        </div>
-
-        {/* Filter Controls */}
-        <div className="flex flex-wrap items-center gap-3">
-          <div className="flex items-center gap-1.5 bg-background border border-border px-3 py-2 rounded-xl">
-            <Filter size={16} className="text-muted" />
-            <select
-              value={selectedDept}
-              onChange={(e) => setSelectedDept(e.target.value)}
-              className="bg-transparent text-sm font-semibold outline-none cursor-pointer text-text"
-            >
-              {departments.map(dept => (
-                <option key={dept} value={dept}>{dept}</option>
-              ))}
-            </select>
+      <div className="space-y-4">
+        <div className="flex flex-col justify-between gap-4 rounded-[28px] border border-border bg-card p-4 shadow-soft md:flex-row md:items-center">
+          {/* Search */}
+          <div className="relative flex-1 max-w-md">
+            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted" size={18} />
+            <input
+              type="text"
+              placeholder="Search by title, description or location..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full pl-11 pr-4 py-2.5 bg-background border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all text-sm font-medium"
+            />
           </div>
 
-          <div className="flex items-center gap-1.5 bg-background border border-border px-3 py-2 rounded-xl">
-            <Briefcase size={16} className="text-muted" />
-            <select
-              value={selectedModel}
-              onChange={(e) => setSelectedModel(e.target.value)}
-              className="bg-transparent text-sm font-semibold outline-none cursor-pointer text-text"
-            >
-              {workModels.map(model => (
-                <option key={model} value={model}>{model}</option>
-              ))}
-            </select>
-          </div>
-
-          <button
-            onClick={() => toggleSort('date')}
-            className={`flex items-center gap-1.5 px-3 py-2 rounded-xl border text-sm font-semibold transition ${sortBy === 'date' ? 'bg-primary/5 border-primary/25 text-primary' : 'bg-background border-border text-muted hover:text-text'
+          {/* Action buttons (Filters & Sort) */}
+          <div className="flex items-center gap-3">
+            {/* Toggle Filters Button */}
+            <button 
+              onClick={() => setShowFilters(!showFilters)} 
+              className={`flex items-center gap-2 px-4 py-2.5 rounded-xl border text-sm font-semibold transition ${
+                showFilters || (selectedDept !== 'All Departments' || selectedModel !== 'All Work Models' || selectedLocation !== 'All Locations' || selectedEmpType !== 'All Employment Types')
+                  ? 'bg-primary/5 border-primary/25 text-primary' 
+                  : 'bg-background border-border text-muted hover:text-text'
               }`}
-          >
-            <ArrowUpDown size={14} /> Date {sortBy === 'date' && (sortOrder === 'asc' ? '↑' : '↓')}
-          </button>
+            >
+              <Filter size={16} />
+              <span>Filters</span>
+              {(selectedDept !== 'All Departments' || selectedModel !== 'All Work Models' || selectedLocation !== 'All Locations' || selectedEmpType !== 'All Employment Types') && (
+                <span className="w-5 h-5 rounded-full bg-primary text-white text-[10px] flex items-center justify-center font-bold">
+                  {(selectedDept !== 'All Departments' ? 1 : 0) +
+                   (selectedModel !== 'All Work Models' ? 1 : 0) +
+                   (selectedLocation !== 'All Locations' ? 1 : 0) +
+                   (selectedEmpType !== 'All Employment Types' ? 1 : 0)}
+                </span>
+              )}
+            </button>
+
+            {/* Sort Date Button */}
+            <button
+              onClick={() => toggleSort('date')}
+              className={`flex items-center gap-1.5 px-4 py-2.5 rounded-xl border text-sm font-semibold transition ${
+                sortBy === 'date' ? 'bg-primary/5 border-primary/25 text-primary' : 'bg-background border-border text-muted hover:text-text'
+              }`}
+            >
+              <ArrowUpDown size={14} /> 
+              <span>Date</span>
+              {sortBy === 'date' && (sortOrder === 'asc' ? '↑' : '↓')}
+            </button>
+          </div>
         </div>
+
+        {/* Expandable Filter Grid panel */}
+        <AnimatePresence>
+          {showFilters && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              exit={{ opacity: 0, height: 0 }}
+              transition={{ duration: 0.2 }}
+              className="border border-border bg-card p-5 rounded-[24px] grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 shadow-soft overflow-hidden"
+            >
+              {/* Dropdown 1: Department */}
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-bold text-muted uppercase tracking-wider block">Department</label>
+                <div className="flex items-center gap-1.5 bg-background border border-border px-3 py-2 rounded-xl">
+                  <Filter size={14} className="text-muted" />
+                  <select
+                    value={selectedDept}
+                    onChange={(e) => setSelectedDept(e.target.value)}
+                    className="bg-transparent text-sm font-semibold outline-none cursor-pointer text-text w-full"
+                  >
+                    {departments.map(dept => (
+                      <option key={dept} value={dept}>{dept}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              {/* Dropdown 2: Work Model */}
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-bold text-muted uppercase tracking-wider block">Work Model</label>
+                <div className="flex items-center gap-1.5 bg-background border border-border px-3 py-2 rounded-xl">
+                  <Briefcase size={14} className="text-muted" />
+                  <select
+                    value={selectedModel}
+                    onChange={(e) => setSelectedModel(e.target.value)}
+                    className="bg-transparent text-sm font-semibold outline-none cursor-pointer text-text w-full"
+                  >
+                    {workModels.map(model => (
+                      <option key={model} value={model}>{model}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              {/* Dropdown 3: Location */}
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-bold text-muted uppercase tracking-wider block">Location</label>
+                <div className="flex items-center gap-1.5 bg-background border border-border px-3 py-2 rounded-xl">
+                  <MapPin size={14} className="text-muted" />
+                  <select
+                    value={selectedLocation}
+                    onChange={(e) => setSelectedLocation(e.target.value)}
+                    className="bg-transparent text-sm font-semibold outline-none cursor-pointer text-text w-full"
+                  >
+                    {locations.map(loc => (
+                      <option key={loc} value={loc}>{loc}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              {/* Dropdown 4: Employment Type */}
+              <div className="space-y-1.5">
+                <div className="flex justify-between items-center">
+                  <label className="text-[10px] font-bold text-muted uppercase tracking-wider block">Employment Type</label>
+                  {(selectedDept !== 'All Departments' || selectedModel !== 'All Work Models' || selectedLocation !== 'All Locations' || selectedEmpType !== 'All Employment Types') && (
+                    <button 
+                      onClick={() => {
+                        setSelectedDept('All Departments');
+                        setSelectedModel('All Work Models');
+                        setSelectedLocation('All Locations');
+                        setSelectedEmpType('All Employment Types');
+                      }}
+                      className="text-[10px] font-bold text-primary hover:underline cursor-pointer"
+                    >
+                      Clear All
+                    </button>
+                  )}
+                </div>
+                <div className="flex items-center gap-1.5 bg-background border border-border px-3 py-2 rounded-xl">
+                  <Users size={14} className="text-muted" />
+                  <select
+                    value={selectedEmpType}
+                    onChange={(e) => setSelectedEmpType(e.target.value)}
+                    className="bg-transparent text-sm font-semibold outline-none cursor-pointer text-text w-full"
+                  >
+                    {employmentTypes.map(type => (
+                      <option key={type} value={type}>{type}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
 
       {/* Main Table/Grid */}
@@ -445,11 +588,11 @@ export default function JobManagement() {
                         <div>
                           <p className="font-bold text-text text-base leading-tight">{job.title}</p>
                           <div className="text-xs text-muted font-semibold mt-1 flex flex-wrap items-center gap-x-2 gap-y-1">
-                            <span>{job.department}</span>
+                            <span>{job.department ? job.department.trim().charAt(0).toUpperCase() + job.department.trim().slice(1).toLowerCase() : ''}</span>
                             <span className="text-border">•</span>
-                            <span>{job.employment_type}</span>
+                            <span>{job.employment_type ? job.employment_type.trim().charAt(0).toUpperCase() + job.employment_type.trim().slice(1).toLowerCase() : ''}</span>
                             <span className="text-border">•</span>
-                            <span className="flex items-center gap-0.5"><MapPin size={12} />{job.location}</span>
+                            <span className="flex items-center gap-0.5"><MapPin size={12} />{job.location ? job.location.trim().charAt(0).toUpperCase() + job.location.trim().slice(1).toLowerCase() : ''}</span>
                           </div>
                         </div>
                       </div>

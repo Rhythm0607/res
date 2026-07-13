@@ -42,4 +42,24 @@ export const jobService = {
   deleteJob: async (jobId: number): Promise<void> => {
     await api.delete(`/jobs/${jobId}`);
   },
+
+  getDashboardStats: async (): Promise<DashboardStats> => {
+    const response = await api.get<DashboardStats>('/jobs/dashboard/stats');
+    return response.data;
+  },
 };
+
+export interface ChartDataItem {
+  name: string;
+  applicants?: number;
+  score?: number;
+}
+
+export interface DashboardStats {
+  active_jobs: number;
+  total_candidates: number;
+  resumes_analyzed: number;
+  high_matches: number;
+  job_distribution: ChartDataItem[];
+  score_trends: ChartDataItem[];
+}

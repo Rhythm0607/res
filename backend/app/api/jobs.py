@@ -120,3 +120,54 @@ def recalculate_job_matches(db: Session, job: Job):
             print(f"Failed to recalculate match result for candidate {candidate.id}: {str(e)}")
             
     db.commit()
+
+@router.get("/dashboard/stats")
+def get_dashboard_stats(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    from sqlalchemy import func
+    
+    # 1. Active Jobs Count
+    active_jobs = db.query(Job).filter(Job.user_id == current_user.id).count()
+
+    # 2. Total Candidates Count
+    total_candidates = db.query(Candidate.email).join(MatchResult).join(Job).filter(Job.user_id == current_user.id).distinct().count()
+
+    # 3. Resumes Analyzed Count
+    resumes_analyzed = db.query(MatchResult).join(Job).filter(Job.user_id == current_user.id).count()
+
+    # 4. Highly Qualified Count (ATS score >= 80)
+    high_matches = db.query(MatchResult).join(Job).filter(Job.user_id == current_user.id, MatchResult.ats_score >= 80).count()
+
+    # 5. Job Distribution Chart (Applicants per Job)
+    job_dist_query = db.query(
+        Job.title,
+        func.count(MatchResult.id).label("count")
+    ).join(MatchResult, MatchResult.job_id == Job.id)\
+     .filter(Job.user_id == current_user.id)\
+     .group_by(Job.title).all()
+     
+    job_distribution = [
+        {"name": title[:20] + "..." if len(title) > 20 else title, "applicants": count}
+        for title, count in job_dist_query
+    ]
+
+    # 6. Score Trends (Average ATS score per job)
+    avg_score_query = db.query(
+        Job.title,
+        func.avg(MatchResult.ats_score).label("avg_score")
+    ).join(MatchResult, MatchResult.job_id == Job.id)\
+     .filter(Job.user_id == current_user.id)\
+     .group_by(Job.title).all()
+     
+    score_trends = [
+        {"name": title[:20] + "..." if len(title) > 20 else title, "score": float(round(avg_score, 1)) if avg_score else 0.0}
+        for title, avg_score in avg_score_query
+    ]
+
+    return {
+        "active_jobs": active_jobs,
+        "total_candidates": total_candidates,
+        "resumes_analyzed": resumes_analyzed,
+        "high_matches": high_matches,
+        "job_distribution": job_distribution,
+        "score_trends": score_trends
+    }
