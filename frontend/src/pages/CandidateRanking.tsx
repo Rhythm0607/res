@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
-import { Star, Briefcase, Users, ShieldAlert, X, Trash2, MessageSquare, AlertCircle, ChevronDown, ChevronUp, Bot } from 'lucide-react';
+import { Star, Briefcase, Users, ShieldAlert, X, Trash2, MessageSquare, AlertCircle, ChevronDown, ChevronUp, Bot, Mail, Copy, Check, RefreshCw } from 'lucide-react';
 import { jobService, JobResponse } from '@/services/jobService';
-import { resumeService, CandidateMatchResponse, InterviewQuestion } from '@/services/resumeService';
+import { resumeService, CandidateMatchResponse, InterviewQuestion, EmailDraftResponse } from '@/services/resumeService';
 
 export default function CandidateRanking() {
   const navigate = useNavigate();
@@ -17,7 +17,7 @@ export default function CandidateRanking() {
 
   // Modal State for Candidate Detail Breakdown
   const [activeCandidate, setActiveCandidate] = useState<CandidateMatchResponse | null>(null);
-  const [modalTab, setModalTab] = useState<'match' | 'profile' | 'text' | 'questions'>('match');
+  const [modalTab, setModalTab] = useState<'match' | 'profile' | 'text' | 'questions' | 'outreach'>('match');
   const [expandedCandidates, setExpandedCandidates] = useState<Record<number, boolean>>({});
 
   // Interview Questions state
@@ -25,6 +25,12 @@ export default function CandidateRanking() {
   const [loadingQuestions, setLoadingQuestions] = useState(false);
   const [questionsError, setQuestionsError] = useState<string | null>(null);
   const [expandedQuestionId, setExpandedQuestionId] = useState<number | null>(null);
+
+  // Email Outreach Draft state
+  const [emailDraft, setEmailDraft] = useState<EmailDraftResponse | null>(null);
+  const [loadingDraft, setLoadingDraft] = useState(false);
+  const [draftError, setDraftError] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
 
   const toggleSkills = (candidateId: number) => {
     setExpandedCandidates(prev => ({
@@ -53,6 +59,38 @@ export default function CandidateRanking() {
       loadQuestions();
     }
   }, [modalTab, activeCandidate, selectedJobId]);
+
+  // Load email draft when outreach tab is selected (or on explicit regenerate)
+  const fetchEmailDraft = async (candidateId: number, jobId: number) => {
+    try {
+      setLoadingDraft(true);
+      setDraftError(null);
+      setCopied(false);
+      const data = await resumeService.getEmailDraft(candidateId, jobId);
+      setEmailDraft(data);
+    } catch (err) {
+      console.error('Failed to load email draft:', err);
+      setDraftError('Could not generate email draft. Please make sure the backend is active.');
+    } finally {
+      setLoadingDraft(false);
+    }
+  };
+
+  useEffect(() => {
+    if (modalTab === 'outreach' && activeCandidate && selectedJobId && !emailDraft && !loadingDraft) {
+      fetchEmailDraft(activeCandidate.candidate_id, selectedJobId);
+    }
+  }, [modalTab, activeCandidate, selectedJobId]);
+
+  // Copy email text to clipboard
+  const handleCopyEmail = () => {
+    if (!emailDraft) return;
+    const fullText = `Subject: ${emailDraft.subject}\n\n${emailDraft.body}`;
+    navigator.clipboard.writeText(fullText).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2500);
+    });
+  };
 
   // Load Job Openings on mount
   useEffect(() => {
@@ -129,9 +167,12 @@ export default function CandidateRanking() {
     }
   };
 
-  const handleOpenModal = (candidate: CandidateMatchResponse) => {
+  const handleOpenModal = (candidate: CandidateMatchResponse, tab: 'match' | 'profile' | 'text' | 'questions' | 'outreach' = 'match') => {
     setActiveCandidate(candidate);
-    setModalTab('match');
+    setModalTab(tab);
+    setEmailDraft(null);
+    setDraftError(null);
+    setCopied(false);
   };
 
   const selectedJob = jobs.find(j => j.id === selectedJobId);
@@ -238,6 +279,16 @@ export default function CandidateRanking() {
                       title="Chat with Candidate"
                     >
                       <MessageSquare size={16} />
+                    </button>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleOpenModal(c, 'outreach');
+                      }}
+                      className="p-2 text-muted hover:text-[#7c3aed] hover:bg-[#7c3aed]/10 rounded-xl transition opacity-0 group-hover:opacity-100 focus:opacity-100"
+                      title="Draft Outreach Email"
+                    >
+                      <Mail size={16} />
                     </button>
                   </div>
                   <div className="text-right">
@@ -357,6 +408,15 @@ export default function CandidateRanking() {
                   }`}
               >
                 Interview Prep
+              </button>
+              <button
+                onClick={() => setModalTab('outreach')}
+                className={`py-3.5 px-4 text-xs font-extrabold border-b-2 uppercase tracking-wider transition ${modalTab === 'outreach'
+                    ? 'border-[#7c3aed] text-[#7c3aed]'
+                    : 'border-transparent text-muted hover:text-text'
+                  }`}
+              >
+                Draft Email
               </button>
             </div>
 
@@ -604,6 +664,128 @@ export default function CandidateRanking() {
                       })
                     )}
                   </div>
+                )}
+              </div>
+            )}
+
+            {/* Outreach Email Draft Tab */}
+            {modalTab === 'outreach' && (
+              <div className="p-6 overflow-y-auto space-y-5 max-h-[60vh]">
+                {/* Tab header */}
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-[#7c3aed]/10 text-[#7c3aed] rounded-xl flex-shrink-0">
+                      <Mail size={20} />
+                    </div>
+                    <div>
+                      <h4 className="text-sm font-bold text-text">AI Outreach Email Draft</h4>
+                      <p className="text-xs text-muted font-medium">Personalized invitation email based on candidate profile and job requirements.</p>
+                    </div>
+                  </div>
+                  {emailDraft && !loadingDraft && (
+                    <button
+                      onClick={() => {
+                        if (activeCandidate && selectedJobId) {
+                          setEmailDraft(null);
+                          fetchEmailDraft(activeCandidate.candidate_id, selectedJobId);
+                        }
+                      }}
+                      className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-muted hover:text-text border border-border hover:border-primary/40 rounded-xl transition"
+                      title="Regenerate email draft"
+                    >
+                      <RefreshCw size={13} />
+                      Regenerate
+                    </button>
+                  )}
+                </div>
+
+                {/* Loading skeleton */}
+                {loadingDraft && (
+                  <div className="space-y-4 animate-pulse">
+                    <div className="bg-background border border-border p-4 rounded-xl space-y-3">
+                      <div className="h-3 bg-muted/20 w-1/4 rounded"></div>
+                      <div className="h-5 bg-muted/20 w-3/4 rounded"></div>
+                    </div>
+                    <div className="bg-background border border-border p-4 rounded-xl space-y-3">
+                      <div className="h-3 bg-muted/20 w-1/4 rounded"></div>
+                      <div className="h-32 bg-muted/20 rounded"></div>
+                    </div>
+                    <div className="text-center text-xs font-semibold text-[#7c3aed] animate-pulse">✦ AI is crafting your personalized email...</div>
+                  </div>
+                )}
+
+                {/* Error state */}
+                {draftError && !loadingDraft && (
+                  <div className="p-4 bg-danger/5 border border-danger/20 rounded-2xl flex items-start gap-3">
+                    <AlertCircle className="text-danger mt-0.5" size={18} />
+                    <div>
+                      <p className="text-sm font-bold text-danger">Could Not Generate Draft</p>
+                      <p className="text-xs text-muted font-semibold mt-1">{draftError}</p>
+                      <button
+                        onClick={() => {
+                          if (activeCandidate && selectedJobId) {
+                            fetchEmailDraft(activeCandidate.candidate_id, selectedJobId);
+                          }
+                        }}
+                        className="mt-3 text-xs font-bold text-[#7c3aed] hover:underline flex items-center gap-1"
+                      >
+                        <RefreshCw size={12} /> Try Again
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {/* Email draft display */}
+                {emailDraft && !loadingDraft && !draftError && (
+                  <>
+                    {/* Subject line */}
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-bold text-muted uppercase tracking-wider block">Subject Line</label>
+                      <div className="bg-background border border-border px-4 py-3 rounded-xl">
+                        <p className="text-sm font-bold text-text">{emailDraft.subject}</p>
+                      </div>
+                    </div>
+
+                    {/* Email body */}
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-bold text-muted uppercase tracking-wider block">Email Body</label>
+                      <div className="bg-background border border-border rounded-xl overflow-hidden">
+                        <textarea
+                          readOnly
+                          value={emailDraft.body}
+                          rows={12}
+                          className="w-full px-4 py-3 text-sm text-text font-medium leading-relaxed resize-none bg-transparent outline-none select-all"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Action buttons */}
+                    <div className="flex flex-wrap items-center gap-3">
+                      {/* Copy to clipboard */}
+                      <button
+                        onClick={handleCopyEmail}
+                        className={`flex items-center gap-2 px-4 py-2.5 text-sm font-bold rounded-xl transition shadow-sm ${
+                          copied
+                            ? 'bg-success/10 text-success border border-success/30'
+                            : 'bg-[#7c3aed]/10 text-[#7c3aed] border border-[#7c3aed]/20 hover:bg-[#7c3aed]/20'
+                        }`}
+                      >
+                        {copied ? <Check size={15} /> : <Copy size={15} />}
+                        {copied ? 'Copied!' : 'Copy to Clipboard'}
+                      </button>
+
+                      {/* Open in mail client */}
+                      <a
+                        href={`mailto:${activeCandidate?.email}?subject=${encodeURIComponent(emailDraft.subject)}&body=${encodeURIComponent(emailDraft.body)}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center gap-2 px-4 py-2.5 text-sm font-bold bg-primary/10 text-primary border border-primary/20 hover:bg-primary/20 rounded-xl transition shadow-sm"
+                      >
+                        <Mail size={15} />
+                        Open in Mail Client
+                      </a>
+                    </div>
+                  </>
                 )}
               </div>
             )}

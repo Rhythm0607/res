@@ -74,6 +74,17 @@ export const resumeService = {
   getCandidateQuestions: async (candidateId: number, jobId: number): Promise<InterviewQuestion[]> => {
     const response = await api.get<InterviewQuestion[]>(`/resumes/candidates/${candidateId}/questions?job_id=${jobId}`);
     return response.data;
+  },
+
+  /**
+   * Generate a personalized outreach / interview invitation email draft for a candidate.
+   * Uses the active LLM backend (OpenAI → Gemini → Ollama) with a secure offline fallback.
+   */
+  getEmailDraft: async (candidateId: number, jobId: number): Promise<EmailDraftResponse> => {
+    const response = await api.get<EmailDraftResponse>(
+      `/resumes/candidates/${candidateId}/email-draft?job_id=${jobId}`
+    );
+    return response.data;
   }
 };
 
@@ -83,6 +94,12 @@ export interface InterviewQuestion {
   question: string;
   evaluation_guide: string;
 }
+
+export interface EmailDraftResponse {
+  subject: string;
+  body: string;
+}
+
 
 export interface CandidateMatchResponse {
   candidate_id: number;
