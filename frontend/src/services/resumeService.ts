@@ -85,6 +85,24 @@ export const resumeService = {
       `/resumes/candidates/${candidateId}/email-draft?job_id=${jobId}`
     );
     return response.data;
+  },
+
+  sendCandidateEmail: async (candidateId: number, jobId: number, subject: string, body: string): Promise<any> => {
+    const response = await api.post(`/resumes/candidates/${candidateId}/send-email`, {
+      job_id: jobId,
+      subject,
+      body
+    });
+    return response.data;
+  },
+
+  sendBulkEmails: async (jobId: number, candidateIds: number[], subjectTemplate: string, bodyTemplate: string): Promise<{ total_sent: number, sent_via_smtp: boolean, failures: string[] }> => {
+    const response = await api.post(`/resumes/jobs/${jobId}/bulk-email`, {
+      candidate_ids: candidateIds,
+      subject_template: subjectTemplate,
+      body_template: bodyTemplate
+    });
+    return response.data;
   }
 };
 

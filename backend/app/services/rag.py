@@ -256,3 +256,86 @@ Example Output Format:
             "evaluation_guide": "Look for specific methodologies (e.g. Agile, Kanban, calendar blocks) and communication practices with project managers."
         }
     ]
+
+def generate_email_outreach(
+    resume_text: str,
+    jd_text: str,
+    required_skills: List[str],
+    candidate_skills: List[str],
+    candidate_name: str,
+    job_title: str
+) -> dict:
+    from app.core.config import settings
+    llm = None
+    if settings.OPENAI_API_KEY:
+        from langchain_openai import ChatOpenAI
+        llm = ChatOpenAI(
+            model_name="gpt-4-turbo-preview", 
+            temperature=0.7, 
+            openai_api_key=settings.OPENAI_API_KEY
+        )
+    elif settings.GEMINI_API_KEY:
+        llm = GeminiLLM(api_key=settings.GEMINI_API_KEY)
+    else:
+        llm = OllamaLLM()
+
+    # Determine matching skills
+    matching_skills = [s for s in required_skills if s.lower() in [cs.lower() for cs in candidate_skills]]
+    
+    prompt = f"""
+You are an expert technical recruiter.
+Write a personalized cold outreach/interview invitation email to the candidate.
+
+Candidate Name: {candidate_name}
+Job Title: {job_title}
+Job Vacancy Description:
+{jd_text[:2000]}
+
+Matching Skills they have: {", ".join(matching_skills) if matching_skills else "None specified"}
+Candidate's Resume Text (Excerpt):
+{resume_text[:2000]}
+
+Write a warm, professional email inviting them for an introductory call.
+- Reference their experience with matching skills: {", ".join(matching_skills[:3]) if matching_skills else "their qualifications"}.
+- Frame their background as a strong fit for the {job_title} position.
+- Suggest a 15-minute introductory call.
+- DO NOT use placeholders like [Candidate Name] or [Your Name]. Fill in the candidate's name as {candidate_name} and sign off as "The HireSense Recruitment Team".
+
+Your response MUST be a valid JSON object. Do NOT include markdown blocks like ```json ... ``` or any other text before/after the JSON.
+The object must have the following keys:
+- "subject": string
+- "body": string
+
+Example Output Format:
+{{
+  "subject": "Introductory Call: {job_title} at HireSense",
+  "body": "Hi {candidate_name}, ..."
+}}
+"""
+    try:
+        if hasattr(llm, "invoke"):
+            response = llm.invoke(prompt)
+            content = response.content if hasattr(response, "content") else str(response)
+        else:
+            content = llm._call(prompt)
+            
+        content = content.strip()
+        if content.startswith("```json"):
+            content = content[7:]
+        if content.endswith("```"):
+            content = content[:-3]
+        content = content.strip()
+        
+        email_data = json.loads(content)
+        if isinstance(email_data, dict) and "subject" in email_data and "body" in email_data:
+            return email_data
+            
+    except Exception as e:
+        print(f"Failed to generate email outreach using LLM: {str(e)}")
+
+    # Fallback email
+    skills_text = f", particularly your experience with {', '.join(matching_skills[:2])}" if matching_skills else ""
+    return {
+        "subject": f"Opportunity: {job_title} role - Introductory Chat",
+        "body": f"Hi {candidate_name},\n\nI hope this email finds you well.\n\nI came across your profile and was very impressed by your background{skills_text}. We are currently seeking a talented {job_title} to join our team, and we believe your skills align incredibly well with the requirements.\n\nI would love to set up a brief 15-minute introductory call to share more about the role and learn more about your career goals. Do you have any availability for a quick chat next week?\n\nBest regards,\n\nThe HireSense Recruitment Team"
+      }

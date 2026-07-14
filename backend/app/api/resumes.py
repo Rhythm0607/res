@@ -7,7 +7,7 @@ from app.api.deps import get_db, get_current_user
 from app.models.schema import User, Job, Candidate, MatchResult
 from app.services.parser import extract_text, parse_resume
 from app.services.matcher import compute_semantic_similarity, calculate_ats_score
-from app.schemas.schemas import CandidateMatchResponse
+from app.schemas.schemas import CandidateMatchResponse, SendEmailRequest, BulkEmailRequest
 
 router = APIRouter()
 
@@ -334,3 +334,208 @@ def get_candidate_interview_questions(
         candidate_skills=candidate.extracted_skills or []
     )
     return questions
+
+@router.get("/candidates/{candidate_id}/email-draft")
+def get_candidate_email_outreach_draft(
+    candidate_id: int,
+    job_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    # 1. Verify job ownership
+    job = db.query(Job).filter(Job.id == job_id, Job.user_id == current_user.id).first()
+    if not job:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Unauthorized access to this vacancy context."
+        )
+        
+    # 2. Verify candidate exists
+    candidate = db.query(Candidate).filter(Candidate.id == candidate_id).first()
+    if not candidate:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Candidate not found."
+        )
+        
+    # 3. Verify match mapping exists
+    match = db.query(MatchResult).filter(MatchResult.candidate_id == candidate_id, MatchResult.job_id == job_id).first()
+    if not match:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Candidate match record not found for this position."
+        )
+        
+    # 4. Generate email draft using RAG helper
+    from app.services.rag import generate_email_outreach
+    email_draft = generate_email_outreach(
+        resume_text=candidate.resume_text or "",
+        jd_text=job.description or "",
+        required_skills=job.required_skills or [],
+        candidate_skills=candidate.extracted_skills or [],
+        candidate_name=candidate.name,
+        job_title=job.title
+    )
+    return email_draft
+
+@router.post("/candidates/{candidate_id}/send-email")
+def send_candidate_email(
+    candidate_id: int,
+    payload: SendEmailRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    from app.core.config import settings
+    import smtplib
+    from email.mime.text import MIMEText
+    from email.mime.multipart import MIMEMultipart
+
+    # 1. Verify job ownership
+    job = db.query(Job).filter(Job.id == payload.job_id, Job.user_id == current_user.id).first()
+    if not job:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Unauthorized access to this vacancy context."
+        )
+        
+    # 2. Verify candidate exists
+    candidate = db.query(Candidate).filter(Candidate.id == candidate_id).first()
+    if not candidate:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Candidate not found."
+        )
+        
+    # 3. Verify match mapping exists
+    match = db.query(MatchResult).filter(MatchResult.candidate_id == candidate_id, MatchResult.job_id == payload.job_id).first()
+    if not match:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Candidate match record not found for this position."
+        )
+
+    # 4. Attempt real SMTP email transmission if config has SMTP credentials
+    smtp_sent = False
+    if settings.SMTP_USER and settings.SMTP_PASSWORD:
+        try:
+            # Setup email mime structure
+            msg = MIMEMultipart()
+            msg['From'] = settings.SMTP_FROM or settings.SMTP_USER
+            msg['To'] = candidate.email
+            msg['Subject'] = payload.subject
+            msg.attach(MIMEText(payload.body, 'plain'))
+
+            # Setup secure SMTP session
+            server = smtplib.SMTP(settings.SMTP_HOST, settings.SMTP_PORT)
+            server.starttls()
+            server.login(settings.SMTP_USER, settings.SMTP_PASSWORD)
+            server.sendmail(msg['From'], msg['To'], msg.as_string())
+            server.quit()
+            smtp_sent = True
+        except Exception as e:
+            print(f"Failed to transmit direct SMTP email outreach: {str(e)}")
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"SMTP transmission failed: {str(e)}"
+            )
+
+    # If no SMTP configured, print to terminal console (mock send)
+    if not smtp_sent:
+        print("\n" + "="*50)
+        print("MOCK EMAIL OUTREACH TRANSMITTED SUCCESSFULLY (NO SMTP CONFIG)")
+        print(f"To: {candidate.email}")
+        print(f"Subject: {payload.subject}")
+        print(f"Body:\n{payload.body}")
+        print("="*50 + "\n")
+
+    return {"message": "Email outreach dispatched successfully!", "sent_via_smtp": smtp_sent}
+
+@router.post("/jobs/{job_id}/bulk-email")
+def send_bulk_candidate_emails(
+    job_id: int,
+    payload: BulkEmailRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    from app.core.config import settings
+    import smtplib
+    from email.mime.text import MIMEText
+    from email.mime.multipart import MIMEMultipart
+
+    # 1. Verify job ownership
+    job = db.query(Job).filter(Job.id == job_id, Job.user_id == current_user.id).first()
+    if not job:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Unauthorized access to this vacancy context."
+        )
+
+    # 2. Query candidates by requested IDs
+    candidates = db.query(Candidate).filter(Candidate.id.in_(payload.candidate_ids)).all()
+    if not candidates:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="No matching candidates found for the specified IDs."
+        )
+
+    sent_count = 0
+    smtp_sent = False
+    failures = []
+
+    # 3. Setup SMTP server once if credentials exist
+    server = None
+    if settings.SMTP_USER and settings.SMTP_PASSWORD:
+        try:
+            server = smtplib.SMTP(settings.SMTP_HOST, settings.SMTP_PORT)
+            server.starttls()
+            server.login(settings.SMTP_USER, settings.SMTP_PASSWORD)
+            smtp_sent = True
+        except Exception as e:
+            print(f"Failed to initialize bulk SMTP session: {str(e)}")
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"Failed to connect to SMTP server: {str(e)}"
+            )
+
+    # 4. Iterate and dispatch emails
+    for candidate in candidates:
+        # Interpolate placeholders: {candidate_name}, {job_title}
+        interpolated_subject = payload.subject_template.replace("{candidate_name}", candidate.name).replace("{job_title}", job.title)
+        interpolated_body = payload.body_template.replace("{candidate_name}", candidate.name).replace("{job_title}", job.title)
+
+        if smtp_sent and server:
+            try:
+                msg = MIMEMultipart()
+                msg['From'] = settings.SMTP_FROM or settings.SMTP_USER
+                msg['To'] = candidate.email
+                msg['Subject'] = interpolated_subject
+                msg.attach(MIMEText(interpolated_body, 'plain'))
+                
+                server.sendmail(msg['From'], msg['To'], msg.as_string())
+                sent_count += 1
+            except Exception as e:
+                print(f"Failed to send email to {candidate.email}: {str(e)}")
+                failures.append(f"{candidate.name} ({candidate.email}): {str(e)}")
+        else:
+            # Mock send
+            print("\n" + "="*50)
+            print(f"MOCK BULK EMAIL DISPATCHED (CANDIDATE ID: {candidate.id})")
+            print(f"To: {candidate.email}")
+            print(f"Subject: {interpolated_subject}")
+            print(f"Body:\n{interpolated_body}")
+            print("="*50 + "\n")
+            sent_count += 1
+
+    # Close SMTP session if it was active
+    if server:
+        try:
+            server.quit()
+        except Exception:
+            pass
+
+    return {
+        "message": f"Successfully processed {sent_count} dispatches.",
+        "total_sent": sent_count,
+        "sent_via_smtp": smtp_sent,
+        "failures": failures
+    }

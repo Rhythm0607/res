@@ -84,3 +84,13 @@ class PasswordUpdate(BaseModel):
     current_password: str
     new_password: str
 
+class SendEmailRequest(BaseModel):
+    job_id: int
+    subject: str
+    body: str
+
+class BulkEmailRequest(BaseModel):
+    candidate_ids: List[int]
+    subject_template: str
+    body_template: str
+

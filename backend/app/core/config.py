@@ -11,6 +11,13 @@ class Settings(BaseSettings):
     OPENAI_API_KEY: str = os.getenv("OPENAI_API_KEY", "")
     GOOGLE_CLIENT_ID: str = ""
     GEMINI_API_KEY: str = ""
+    
+    # SMTP email configuration
+    SMTP_HOST: str = "smtp.gmail.com"
+    SMTP_PORT: int = 587
+    SMTP_USER: str = ""
+    SMTP_PASSWORD: str = ""
+    SMTP_FROM: str = ""
 
     class Config:
         env_file = ".env"

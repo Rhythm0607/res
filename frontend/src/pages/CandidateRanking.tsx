@@ -31,6 +31,20 @@ export default function CandidateRanking() {
   const [loadingDraft, setLoadingDraft] = useState(false);
   const [draftError, setDraftError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+  const [sendingEmail, setSendingEmail] = useState(false);
+  const [sendSuccess, setSendSuccess] = useState(false);
+  const [sendError, setSendError] = useState<string | null>(null);
+
+  // Bulk Email Outreach states
+  const [selectedCandidateIds, setSelectedCandidateIds] = useState<number[]>([]);
+  const [isBulkModalOpen, setIsBulkModalOpen] = useState(false);
+  const [bulkEmailTargetMode, setBulkEmailTargetMode] = useState<'selected' | 'topN' | 'all'>('selected');
+  const [bulkEmailTopNLimit, setBulkEmailTopNLimit] = useState<number | ''>(5);
+  const [bulkSubject, setBulkSubject] = useState('Invitation to Interview: {job_title} role at HireSense');
+  const [bulkBody, setBulkBody] = useState('Hi {candidate_name},\n\nWe were impressed by your background. We would like to invite you for an introductory interview for the {job_title} role.\n\nPlease let us know if you have any availability for a brief call next week.\n\nBest regards,\nRecruitment Team');
+  const [sendingBulk, setSendingBulk] = useState(false);
+  const [bulkSuccess, setBulkSuccess] = useState<string | null>(null);
+  const [bulkError, setBulkError] = useState<string | null>(null);
 
   const toggleSkills = (candidateId: number) => {
     setExpandedCandidates(prev => ({
@@ -90,6 +104,90 @@ export default function CandidateRanking() {
       setCopied(true);
       setTimeout(() => setCopied(false), 2500);
     });
+  };
+
+  // Send email directly via backend SMTP
+  const handleSendEmail = async () => {
+    if (!emailDraft || !activeCandidate || !selectedJobId) return;
+    try {
+      setSendingEmail(true);
+      setSendError(null);
+      setSendSuccess(false);
+      await resumeService.sendCandidateEmail(
+        activeCandidate.candidate_id,
+        selectedJobId,
+        emailDraft.subject,
+        emailDraft.body
+      );
+      setSendSuccess(true);
+      setTimeout(() => setSendSuccess(false), 3000);
+    } catch (err: any) {
+      console.error('Failed to send email:', err);
+      const errMsg = err.response?.data?.detail || 'Failed to dispatch email. Please check credentials.';
+      setSendError(errMsg);
+    } finally {
+      setSendingEmail(false);
+    }
+  };
+
+  // Toggle selection for a single candidate
+  const toggleCandidateSelection = (candidateId: number) => {
+    setSelectedCandidateIds(prev =>
+      prev.includes(candidateId)
+        ? prev.filter(id => id !== candidateId)
+        : [...prev, candidateId]
+    );
+  };
+
+  // Toggle selection for all candidates in the list
+  const toggleAllCandidatesSelection = () => {
+    if (selectedCandidateIds.length === candidates.length) {
+      setSelectedCandidateIds([]);
+    } else {
+      setSelectedCandidateIds(candidates.map(c => c.candidate_id));
+    }
+  };
+
+  // Get final candidates list depending on target mode
+  const getSelectedCandidatesForBulk = () => {
+    const sorted = [...candidates].sort((a, b) => b.ats_score - a.ats_score);
+    if (bulkEmailTargetMode === 'topN') {
+      const limit = typeof bulkEmailTopNLimit === 'number' ? bulkEmailTopNLimit : 0;
+      return sorted.slice(0, Math.max(0, limit));
+    }
+    if (bulkEmailTargetMode === 'all') return sorted;
+    return candidates.filter(c => selectedCandidateIds.includes(c.candidate_id));
+  };
+
+  // Trigger bulk dispatches to API
+  const handleSendBulkEmails = async () => {
+    if (!selectedJobId) return;
+    const targetCandidates = getSelectedCandidatesForBulk();
+    const ids = targetCandidates.map(c => c.candidate_id);
+    if (ids.length === 0) {
+      setBulkError('No candidates selected for outreach.');
+      return;
+    }
+
+    try {
+      setSendingBulk(true);
+      setBulkError(null);
+      setBulkSuccess(null);
+      
+      const response = await resumeService.sendBulkEmails(selectedJobId, ids, bulkSubject, bulkBody);
+      setBulkSuccess(`Dispatched ${response.total_sent} invitations successfully!`);
+      setSelectedCandidateIds([]);
+      setTimeout(() => {
+        setBulkSuccess(null);
+        setIsBulkModalOpen(false);
+      }, 2500);
+    } catch (err: any) {
+      console.error('Failed to send bulk emails:', err);
+      const errMsg = err.response?.data?.detail || 'Failed to dispatch bulk outreach dispatches. Please check settings.';
+      setBulkError(errMsg);
+    } finally {
+      setSendingBulk(false);
+    }
   };
 
   // Load Job Openings on mount
@@ -173,6 +271,9 @@ export default function CandidateRanking() {
     setEmailDraft(null);
     setDraftError(null);
     setCopied(false);
+    setSendSuccess(false);
+    setSendError(null);
+    setSendingEmail(false);
   };
 
   const selectedJob = jobs.find(j => j.id === selectedJobId);
@@ -216,6 +317,50 @@ export default function CandidateRanking() {
         </div>
       )}
 
+      {/* Selection Control Bar */}
+      {!loadingCandidates && candidates.length > 0 && (
+        <div className="flex flex-wrap items-center justify-between gap-4 px-3">
+          <div className="flex items-center gap-3">
+            <input
+              type="checkbox"
+              checked={candidates.length > 0 && selectedCandidateIds.length === candidates.length}
+              onChange={toggleAllCandidatesSelection}
+              className="w-4.5 h-4.5 text-primary border-border rounded focus:ring-primary/50 cursor-pointer animate-none"
+              id="select-all-candidates"
+            />
+            <label htmlFor="select-all-candidates" className="text-xs font-bold text-muted cursor-pointer select-none">
+              {selectedCandidateIds.length === candidates.length ? 'Deselect All' : 'Select All Candidates'}
+            </label>
+            {selectedCandidateIds.length > 0 && (
+              <span className="text-xs font-bold bg-[#7c3aed]/10 text-[#7c3aed] px-2.5 py-1 rounded-xl">
+                {selectedCandidateIds.length} selected manually
+              </span>
+            )}
+          </div>
+
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => {
+                if (selectedCandidateIds.length > 0) {
+                  setBulkEmailTargetMode('selected');
+                } else {
+                  setBulkEmailTargetMode('topN');
+                }
+                setBulkSuccess(null);
+                setBulkError(null);
+                setIsBulkModalOpen(true);
+              }}
+              className="flex items-center gap-1.5 px-4 py-2 bg-[#7c3aed] text-white text-xs font-bold rounded-xl hover:bg-[#6d28d9] shadow-soft transition cursor-pointer"
+            >
+              <Mail size={13} />
+              {selectedCandidateIds.length > 0
+                ? `Bulk Invite (${selectedCandidateIds.length} Selected)`
+                : 'Bulk Invite Matches'}
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Main Content Area */}
       {loadingCandidates ? (
         <div className="h-64 flex flex-col items-center justify-center gap-3">
@@ -255,8 +400,18 @@ export default function CandidateRanking() {
 
               <div>
                 {/* Header: Initial, Delete Icon & ATS Score */}
-                <div className="flex justify-between items-start mb-4">
-                  <div className="flex items-center gap-3">
+                 <div className="flex justify-between items-start mb-4">
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      checked={selectedCandidateIds.includes(c.candidate_id)}
+                      onChange={(e) => {
+                        e.stopPropagation();
+                        toggleCandidateSelection(c.candidate_id);
+                      }}
+                      onClick={(e) => e.stopPropagation()}
+                      className="w-4 h-4 text-primary border-border rounded focus:ring-primary/50 cursor-pointer flex-shrink-0 mr-1"
+                    />
                     <div className="w-12 h-12 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold text-lg flex-shrink-0">
                       {c.name.charAt(0)}
                     </div>
@@ -670,107 +825,86 @@ export default function CandidateRanking() {
 
             {/* Outreach Email Draft Tab */}
             {modalTab === 'outreach' && (
-              <div className="p-6 overflow-y-auto space-y-5 max-h-[60vh]">
-                {/* Tab header */}
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="p-2 bg-[#7c3aed]/10 text-[#7c3aed] rounded-xl flex-shrink-0">
-                      <Mail size={20} />
+              <div className="flex flex-col h-[60vh] overflow-hidden">
+                {/* Scrollable Content Region */}
+                <div className="flex-1 overflow-y-auto p-4 space-y-4">
+                  {/* Loading skeleton */}
+                  {loadingDraft && (
+                    <div className="space-y-4 animate-pulse">
+                      <div className="bg-background border border-border p-4 rounded-xl space-y-3">
+                        <div className="h-3 bg-muted/20 w-1/4 rounded"></div>
+                        <div className="h-5 bg-muted/20 w-3/4 rounded"></div>
+                      </div>
+                      <div className="bg-background border border-border p-4 rounded-xl space-y-3">
+                        <div className="h-3 bg-muted/20 w-1/4 rounded"></div>
+                        <div className="h-32 bg-muted/20 rounded"></div>
+                      </div>
+                      <div className="text-center text-xs font-semibold text-[#7c3aed] animate-pulse">✦ AI is crafting your personalized email...</div>
                     </div>
-                    <div>
-                      <h4 className="text-sm font-bold text-text">AI Outreach Email Draft</h4>
-                      <p className="text-xs text-muted font-medium">Personalized invitation email based on candidate profile and job requirements.</p>
+                  )}
+
+                  {/* Error state */}
+                  {draftError && !loadingDraft && (
+                    <div className="p-4 bg-danger/5 border border-danger/20 rounded-2xl flex items-start gap-3">
+                      <AlertCircle className="text-danger mt-0.5" size={18} />
+                      <div>
+                        <p className="text-sm font-bold text-danger">Could Not Generate Draft</p>
+                        <p className="text-xs text-muted font-semibold mt-1">{draftError}</p>
+                        <button
+                          onClick={() => {
+                            if (activeCandidate && selectedJobId) {
+                              fetchEmailDraft(activeCandidate.candidate_id, selectedJobId);
+                            }
+                          }}
+                          className="mt-3 text-xs font-bold text-[#7c3aed] hover:underline flex items-center gap-1 cursor-pointer"
+                        >
+                          <RefreshCw size={12} /> Try Again
+                        </button>
+                      </div>
                     </div>
-                  </div>
-                  {emailDraft && !loadingDraft && (
-                    <button
-                      onClick={() => {
-                        if (activeCandidate && selectedJobId) {
-                          setEmailDraft(null);
-                          fetchEmailDraft(activeCandidate.candidate_id, selectedJobId);
-                        }
-                      }}
-                      className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-muted hover:text-text border border-border hover:border-primary/40 rounded-xl transition"
-                      title="Regenerate email draft"
-                    >
-                      <RefreshCw size={13} />
-                      Regenerate
-                    </button>
+                  )}
+
+                  {/* Email draft display */}
+                  {emailDraft && !loadingDraft && !draftError && (
+                    <>
+                      {/* Subject line */}
+                      <div className="space-y-1.5">
+                        <label className="text-[10px] font-bold text-muted uppercase tracking-wider block">Subject Line</label>
+                        <div className="bg-background border border-border px-3 py-2.5 rounded-xl">
+                          <p className="text-sm font-bold text-text">{emailDraft.subject}</p>
+                        </div>
+                      </div>
+
+                      {/* Email body */}
+                      <div className="space-y-1.5">
+                        <label className="text-[10px] font-bold text-muted uppercase tracking-wider block">Email Body</label>
+                        <div className="bg-background border border-border rounded-xl overflow-hidden">
+                          <textarea
+                            readOnly
+                            value={emailDraft.body}
+                            rows={10}
+                            className="w-full px-3 py-2.5 text-sm text-text font-medium leading-relaxed resize-none bg-transparent outline-none select-all"
+                          />
+                        </div>
+                      </div>
+                    </>
                   )}
                 </div>
 
-                {/* Loading skeleton */}
-                {loadingDraft && (
-                  <div className="space-y-4 animate-pulse">
-                    <div className="bg-background border border-border p-4 rounded-xl space-y-3">
-                      <div className="h-3 bg-muted/20 w-1/4 rounded"></div>
-                      <div className="h-5 bg-muted/20 w-3/4 rounded"></div>
-                    </div>
-                    <div className="bg-background border border-border p-4 rounded-xl space-y-3">
-                      <div className="h-3 bg-muted/20 w-1/4 rounded"></div>
-                      <div className="h-32 bg-muted/20 rounded"></div>
-                    </div>
-                    <div className="text-center text-xs font-semibold text-[#7c3aed] animate-pulse">✦ AI is crafting your personalized email...</div>
-                  </div>
-                )}
-
-                {/* Error state */}
-                {draftError && !loadingDraft && (
-                  <div className="p-4 bg-danger/5 border border-danger/20 rounded-2xl flex items-start gap-3">
-                    <AlertCircle className="text-danger mt-0.5" size={18} />
-                    <div>
-                      <p className="text-sm font-bold text-danger">Could Not Generate Draft</p>
-                      <p className="text-xs text-muted font-semibold mt-1">{draftError}</p>
-                      <button
-                        onClick={() => {
-                          if (activeCandidate && selectedJobId) {
-                            fetchEmailDraft(activeCandidate.candidate_id, selectedJobId);
-                          }
-                        }}
-                        className="mt-3 text-xs font-bold text-[#7c3aed] hover:underline flex items-center gap-1"
-                      >
-                        <RefreshCw size={12} /> Try Again
-                      </button>
-                    </div>
-                  </div>
-                )}
-
-                {/* Email draft display */}
+                {/* Fixed Action Footer (always visible at the bottom, compact padding) */}
                 {emailDraft && !loadingDraft && !draftError && (
-                  <>
-                    {/* Subject line */}
-                    <div className="space-y-2">
-                      <label className="text-[10px] font-bold text-muted uppercase tracking-wider block">Subject Line</label>
-                      <div className="bg-background border border-border px-4 py-3 rounded-xl">
-                        <p className="text-sm font-bold text-text">{emailDraft.subject}</p>
-                      </div>
-                    </div>
-
-                    {/* Email body */}
-                    <div className="space-y-2">
-                      <label className="text-[10px] font-bold text-muted uppercase tracking-wider block">Email Body</label>
-                      <div className="bg-background border border-border rounded-xl overflow-hidden">
-                        <textarea
-                          readOnly
-                          value={emailDraft.body}
-                          rows={12}
-                          className="w-full px-4 py-3 text-sm text-text font-medium leading-relaxed resize-none bg-transparent outline-none select-all"
-                        />
-                      </div>
-                    </div>
-
-                    {/* Action buttons */}
-                    <div className="flex flex-wrap items-center gap-3">
+                  <div className="p-4 border-t border-border bg-card flex flex-col gap-2.5 shrink-0">
+                    <div className="flex flex-wrap items-center gap-2.5">
                       {/* Copy to clipboard */}
                       <button
                         onClick={handleCopyEmail}
-                        className={`flex items-center gap-2 px-4 py-2.5 text-sm font-bold rounded-xl transition shadow-sm ${
+                        className={`flex items-center gap-1.5 px-3 py-2 text-xs font-bold rounded-xl transition shadow-sm cursor-pointer ${
                           copied
                             ? 'bg-success/10 text-success border border-success/30'
                             : 'bg-[#7c3aed]/10 text-[#7c3aed] border border-[#7c3aed]/20 hover:bg-[#7c3aed]/20'
                         }`}
                       >
-                        {copied ? <Check size={15} /> : <Copy size={15} />}
+                        {copied ? <Check size={14} /> : <Copy size={14} />}
                         {copied ? 'Copied!' : 'Copy to Clipboard'}
                       </button>
 
@@ -779,13 +913,37 @@ export default function CandidateRanking() {
                         href={`mailto:${activeCandidate?.email}?subject=${encodeURIComponent(emailDraft.subject)}&body=${encodeURIComponent(emailDraft.body)}`}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="flex items-center gap-2 px-4 py-2.5 text-sm font-bold bg-primary/10 text-primary border border-primary/20 hover:bg-primary/20 rounded-xl transition shadow-sm"
+                        className="flex items-center gap-1.5 px-3 py-2 text-xs font-bold bg-primary/10 text-primary border border-primary/20 hover:bg-primary/20 rounded-xl transition shadow-sm cursor-pointer"
                       >
-                        <Mail size={15} />
+                        <Mail size={14} />
                         Open in Mail Client
                       </a>
+
+                      {/* Send Directly from App */}
+                      <button
+                        onClick={handleSendEmail}
+                        disabled={sendingEmail}
+                        className={`flex items-center gap-1.5 px-3 py-2 text-xs font-bold rounded-xl transition shadow-sm cursor-pointer ${
+                          sendSuccess
+                            ? 'bg-success text-white'
+                            : 'bg-primary text-white hover:bg-primary-hover disabled:opacity-50'
+                        }`}
+                      >
+                        {sendingEmail ? (
+                          <span className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+                        ) : sendSuccess ? (
+                          <Check size={14} />
+                        ) : (
+                          <Mail size={14} />
+                        )}
+                        {sendingEmail ? 'Sending...' : sendSuccess ? 'Sent Directly!' : 'Send Directly'}
+                      </button>
                     </div>
-                  </>
+
+                    {sendError && (
+                      <p className="text-[11px] font-semibold text-danger">{sendError}</p>
+                    )}
+                  </div>
                 )}
               </div>
             )}
@@ -798,6 +956,177 @@ export default function CandidateRanking() {
               >
                 Close Match Analysis
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+      {/* Bulk Email Outreach Modal */}
+      {isBulkModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-text/40 backdrop-blur-sm p-4">
+          <div className="w-full max-w-2xl rounded-[32px] border border-border bg-card p-0 shadow-2xl overflow-hidden flex flex-col max-h-[85vh] animate-in fade-in-50 zoom-in-95 duration-200">
+            {/* Header */}
+            <div className="p-6 border-b border-border flex items-center justify-between bg-background/50">
+              <div className="flex items-center gap-3">
+                <div className="p-2.5 bg-[#7c3aed]/10 text-[#7c3aed] rounded-2xl">
+                  <Mail size={22} />
+                </div>
+                <div>
+                  <h3 className="text-lg font-bold text-text">Bulk Outreach Invitation</h3>
+                  <p className="text-xs text-muted font-medium">Send interview invites to multiple candidates using customizable templates.</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setIsBulkModalOpen(false)}
+                className="p-2 hover:bg-background rounded-xl transition text-muted hover:text-text cursor-pointer"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            {/* Content Body */}
+            <div className="flex-1 overflow-y-auto p-6 space-y-5">
+              {/* Target Selector Options */}
+              <div className="space-y-3">
+                <div className="space-y-2">
+                  <label className="text-[10px] font-bold text-muted uppercase tracking-wider block">Recipient Selection</label>
+                  <select
+                    value={bulkEmailTargetMode}
+                    onChange={(e: any) => setBulkEmailTargetMode(e.target.value)}
+                    className="w-full px-4 py-2.5 border border-border rounded-xl bg-background text-sm font-bold text-text outline-none focus:border-primary"
+                  >
+                    <option value="selected" disabled={selectedCandidateIds.length === 0}>
+                      Currently Selected Candidates ({selectedCandidateIds.length})
+                    </option>
+                    <option value="topN">Top N Candidates (by AI rank)</option>
+                    <option value="all">All Matched Candidates ({candidates.length})</option>
+                  </select>
+                </div>
+
+                {/* Top N input field */}
+                {bulkEmailTargetMode === 'topN' && (
+                  <div className="space-y-1.5 animate-in slide-in-from-top-2 duration-200">
+                    <label className="text-[10px] font-bold text-muted uppercase tracking-wider block">Specify N (Count)</label>
+                    <input
+                      type="number"
+                      min={1}
+                      max={candidates.length}
+                      value={bulkEmailTopNLimit}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        if (val === '') {
+                          setBulkEmailTopNLimit('');
+                        } else {
+                          const parsed = parseInt(val, 10);
+                          setBulkEmailTopNLimit(isNaN(parsed) ? 1 : Math.max(1, parsed));
+                        }
+                      }}
+                      className="w-full max-w-[120px] px-3.5 py-2 border border-border rounded-xl bg-background text-sm font-bold text-text outline-none focus:border-primary"
+                    />
+                  </div>
+                )}
+              </div>
+
+              {/* Target candidates visual list tags */}
+              <div className="space-y-2">
+                <label className="text-[10px] font-bold text-muted uppercase tracking-wider block">
+                  Target Recipient List ({getSelectedCandidatesForBulk().length})
+                </label>
+                <div className="flex flex-wrap gap-2 p-3 bg-background border border-border rounded-xl max-h-24 overflow-y-auto">
+                  {getSelectedCandidatesForBulk().length === 0 ? (
+                    <p className="text-xs text-muted font-semibold">No candidates fall under this selection filter.</p>
+                  ) : (
+                    getSelectedCandidatesForBulk().map(c => (
+                      <span
+                        key={c.candidate_id}
+                        className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-bold bg-[#7c3aed]/10 text-[#7c3aed] border border-[#7c3aed]/25 rounded-lg animate-none"
+                      >
+                        {c.name}
+                        {bulkEmailTargetMode === 'selected' && (
+                          <button
+                            onClick={() => toggleCandidateSelection(c.candidate_id)}
+                            className="hover:text-danger ml-1 cursor-pointer"
+                          >
+                            <X size={12} />
+                          </button>
+                        )}
+                      </span>
+                    ))
+                  )}
+                </div>
+              </div>
+
+              {/* Subject Template */}
+              <div className="space-y-2">
+                <label className="text-[10px] font-bold text-muted uppercase tracking-wider block">Subject Template</label>
+                <input
+                  type="text"
+                  value={bulkSubject}
+                  onChange={(e) => setBulkSubject(e.target.value)}
+                  className="w-full px-4 py-2.5 border border-border rounded-xl bg-background text-sm font-bold text-text outline-none focus:border-primary"
+                  placeholder="Subject template..."
+                />
+              </div>
+
+              {/* Body Template */}
+              <div className="space-y-2">
+                <label className="text-[10px] font-bold text-muted uppercase tracking-wider block">Body Template</label>
+                <textarea
+                  value={bulkBody}
+                  onChange={(e) => setBulkBody(e.target.value)}
+                  rows={6}
+                  className="w-full px-4 py-3 border border-border rounded-xl bg-background text-sm font-medium leading-relaxed text-text outline-none focus:border-primary"
+                  placeholder="Email body template..."
+                />
+              </div>
+
+              {/* Placeholder Cheat Sheet */}
+              <div className="p-3 bg-primary/5 border border-primary/20 rounded-2xl">
+                <h4 className="text-xs font-bold text-primary flex items-center gap-1">
+                  ✦ Dynamic Placeholders Cheat Sheet:
+                </h4>
+                <p className="text-[11px] text-muted font-medium mt-1">
+                  You can use variables in the templates that will be replaced per recipient:
+                </p>
+                <div className="flex gap-4 mt-2">
+                  <code className="text-xs font-mono font-bold text-primary bg-primary/10 px-1.5 py-0.5 rounded">
+                    {`{candidate_name}`}
+                  </code>
+                  <code className="text-xs font-mono font-bold text-primary bg-primary/10 px-1.5 py-0.5 rounded">
+                    {`{job_title}`}
+                  </code>
+                </div>
+              </div>
+            </div>
+
+            {/* Modal Actions Footer */}
+            <div className="p-6 border-t border-border bg-background/50 flex flex-col gap-3 shrink-0">
+              <div className="flex items-center justify-end gap-3">
+                <button
+                  onClick={() => setIsBulkModalOpen(false)}
+                  className="px-5 py-2.5 border border-border text-muted hover:text-text font-bold text-sm rounded-xl hover:bg-background transition cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleSendBulkEmails}
+                  disabled={sendingBulk || getSelectedCandidatesForBulk().length === 0}
+                  className="px-5 py-2.5 bg-[#7c3aed] hover:bg-[#6d28d9] disabled:opacity-50 text-white font-bold text-sm rounded-xl transition shadow-md flex items-center gap-2 cursor-pointer"
+                >
+                  {sendingBulk ? (
+                    <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+                  ) : (
+                    <Mail size={15} />
+                  )}
+                  {sendingBulk ? 'Sending Invitations...' : 'Send Bulk Invites'}
+                </button>
+              </div>
+
+              {bulkError && (
+                <p className="text-xs font-bold text-danger text-right mt-1.5">{bulkError}</p>
+              )}
+              {bulkSuccess && (
+                <p className="text-xs font-bold text-success text-right mt-1.5">{bulkSuccess}</p>
+              )}
             </div>
           </div>
         </div>
