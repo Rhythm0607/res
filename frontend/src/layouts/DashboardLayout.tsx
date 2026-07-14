@@ -15,10 +15,10 @@ export default function DashboardLayout() {
   ];
 
   return (
-    <div className="flex h-screen overflow-hidden font-sans" style={{ backgroundColor: '#EBEDE8', color: '#333F3C' }}>
+    <div className="flex h-screen w-full overflow-hidden font-sans relative" style={{ backgroundColor: '#EBEDE8', color: '#333F3C' }}>
       {/* Sidebar */}
       <aside
-        className="w-64 flex flex-col z-20 flex-shrink-0"
+        className="w-64 flex flex-col z-20 flex-shrink-0 fixed left-0 top-0 h-screen"
         style={{ backgroundColor: '#004838', boxShadow: '4px 0 24px rgba(0,72,56,0.15)' }}
       >
         {/* Logo */}
@@ -105,7 +105,7 @@ export default function DashboardLayout() {
       </aside>
 
       {/* Main content */}
-      <main className="flex-1 flex flex-col relative z-10 min-w-0">
+      <main className="flex-1 flex flex-col min-w-0 pl-64">
         {/* Top header */}
         <header
           className="h-20 flex items-center justify-between px-8 flex-shrink-0"

@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { useSearchParams } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -644,26 +645,27 @@ export default function JobManagement() {
       )}
 
       {/* Slide-over Panel for Create Job Form */}
-      <AnimatePresence>
-        {isCreateModalOpen && (
-          <>
-            {/* Backdrop */}
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 0.4 }}
-              exit={{ opacity: 0 }}
-              onClick={closeCreateModal}
-              className="fixed inset-0 bg-black z-40 backdrop-blur-sm"
-            />
+      {createPortal(
+        <AnimatePresence>
+          {isCreateModalOpen && (
+            <>
+              {/* Backdrop */}
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 0.4 }}
+                exit={{ opacity: 0 }}
+                onClick={closeCreateModal}
+                className="fixed inset-0 bg-black/40 z-40 backdrop-blur-sm"
+              />
 
-            {/* Sliding Panel */}
-            <motion.div
-              initial={{ x: '100%' }}
-              animate={{ x: 0 }}
-              exit={{ x: '100%' }}
-              transition={{ type: 'spring', damping: 25, stiffness: 220 }}
-              className="fixed right-0 top-0 h-full w-full max-w-xl bg-card border-l border-border z-50 shadow-2xl flex flex-col"
-            >
+              {/* Sliding Panel */}
+              <motion.div
+                initial={{ x: '100%' }}
+                animate={{ x: 0 }}
+                exit={{ x: '100%' }}
+                transition={{ type: 'spring', damping: 25, stiffness: 220 }}
+                className="fixed right-0 top-0 h-screen w-full max-w-xl bg-card border-l border-border z-50 shadow-2xl flex flex-col"
+              >
               {/* Header */}
               <div className="p-6 border-b border-border flex items-center justify-between bg-background/50">
                 <div>
@@ -844,7 +846,9 @@ export default function JobManagement() {
             </motion.div>
           </>
         )}
-      </AnimatePresence>
+      </AnimatePresence>,
+      document.body
+    )}
 
       {/* Bulk Resume Upload Modal */}
       <AnimatePresence>
