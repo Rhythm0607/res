@@ -9,6 +9,7 @@ class User(Base):
     hashed_password = Column(String, nullable=False)
     full_name = Column(String)
     is_active = Column(Boolean, default=True)
+    avatar_url = Column(String, nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
 class Job(Base):
@@ -52,3 +53,44 @@ class MatchResult(Base):
     ai_summary = Column(Text)
     missing_skills = Column(JSON)
     status = Column(String, default="Screened")
+
+class UserSettings(Base):
+    __tablename__ = "user_settings"
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), unique=True, index=True)
+    skills_match = Column(Integer, default=88)
+    experience_match = Column(Integer, default=76)
+    culture_match = Column(Integer, default=82)
+    communication_match = Column(Integer, default=74)
+    theme_preference = Column(String, default="Comfortable layout")
+    alert_match = Column(Boolean, default=True)
+    alert_recap = Column(Boolean, default=True)
+
+class TeamMember(Base):
+    __tablename__ = "team_members"
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String, nullable=False)
+    email = Column(String, nullable=False)
+    role = Column(String, nullable=False)
+    coverage = Column(String)
+    status = Column(String, default="Pending")
+    inviter_id = Column(Integer, ForeignKey("users.id"))
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+class WorkflowStage(Base):
+    __tablename__ = "workflow_stages"
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String, nullable=False)
+    order_index = Column(Integer, default=0)
+    user_id = Column(Integer, ForeignKey("users.id"))
+
+class Notification(Base):
+    __tablename__ = "notifications"
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), index=True)
+    title = Column(String, nullable=False)
+    message = Column(Text, nullable=False)
+    type = Column(String, default="system")
+    is_read = Column(Boolean, default=False)
+    link_url = Column(String, nullable=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())

@@ -1,4 +1,6 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File
+import os
+import shutil
 from sqlalchemy.orm import Session
 from fastapi.security import OAuth2PasswordRequestForm
 from app.database import get_db
@@ -120,3 +122,27 @@ def update_password(
     current_user.hashed_password = get_password_hash(payload.new_password)
     db.commit()
     return None
+
+UPLOAD_DIR = "uploads/avatars"
+os.makedirs(UPLOAD_DIR, exist_ok=True)
+
+@router.post("/avatar", response_model=UserResponse)
+def upload_avatar(
+    file: UploadFile = File(...),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    if not file.content_type.startswith("image/"):
+        raise HTTPException(status_code=400, detail="File must be an image")
+    
+    file_extension = os.path.splitext(file.filename)[1]
+    filename = f"user_{current_user.id}_{secrets.token_hex(8)}{file_extension}"
+    file_path = os.path.join(UPLOAD_DIR, filename)
+    
+    with open(file_path, "wb") as buffer:
+        shutil.copyfileobj(file.file, buffer)
+        
+    current_user.avatar_url = f"/uploads/avatars/{filename}"
+    db.commit()
+    db.refresh(current_user)
+    return current_user

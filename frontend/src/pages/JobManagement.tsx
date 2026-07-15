@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { useSearchParams } from 'react-router-dom';
-import { useForm } from 'react-hook-form';
+import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import {
@@ -12,6 +12,18 @@ import {
 import { AnimatePresence, motion } from 'framer-motion';
 import { jobService, JobResponse, JobCreate } from '@/services/jobService';
 import { resumeService } from '@/services/resumeService';
+import { SearchableCombobox } from '@/components/SearchableCombobox';
+import { MultiSelectCombobox } from '@/components/MultiSelectCombobox';
+
+// Default Options for Dropdowns
+const JOB_TITLE_OPTIONS = ["Software Engineer", "Frontend Developer", "Backend Developer", "Full Stack Developer", "Data Scientist", "AI/ML Engineer", "DevOps Engineer", "QA Engineer", "Product Manager", "UI/UX Designer"];
+const DEPT_OPTIONS = ["Engineering", "Product", "Design", "Marketing", "Sales", "Human Resources", "Finance", "Operations", "Customer Support"];
+const LOCATION_OPTIONS = ["San Francisco, CA", "New York, NY", "Austin, TX", "London, UK", "Remote"];
+const EMP_TYPE_OPTIONS = ["Full-time", "Part-time", "Contract", "Internship", "Freelance", "Temporary", "Remote", "Hybrid", "On-site"];
+const WORK_MODEL_OPTIONS = ["Remote", "Hybrid", "On-site"];
+const EXP_YEARS_OPTIONS = ["0", "1", "2", "3", "5", "8", "10"];
+const SALARY_OPTIONS = ["$50K - $80K", "$80K - $120K", "$120K - $150K", "$150K+"];
+const SKILLS_OPTIONS = ["JavaScript", "TypeScript", "React", "Next.js", "Node.js", "Python", "Java", "C++", "SQL", "PostgreSQL", "MongoDB", "AWS", "Docker", "Kubernetes", "Git", "REST APIs", "Machine Learning", "TensorFlow", "PyTorch", "Figma"];
 
 // Validation Schema
 const jobFormSchema = z.object({
@@ -19,8 +31,8 @@ const jobFormSchema = z.object({
   department: z.string().min(2, 'Department must be at least 2 characters'),
   location: z.string().min(2, 'Location is required'),
   description: z.string().min(10, 'Description must be at least 10 characters'),
-  required_skills_raw: z.string().min(1, 'At least one required skill is required (comma-separated)'),
-  preferred_skills_raw: z.string().optional(),
+  required_skills: z.array(z.string()).min(1, 'At least one required skill is required'),
+  preferred_skills: z.array(z.string()).optional(),
   experience_years: z.coerce.number().min(0, 'Experience years must be 0 or more'),
   employment_type: z.string().min(1, 'Employment type is required'),
   salary_range: z.string().min(1, 'Salary range is required'),
@@ -154,6 +166,7 @@ export default function JobManagement() {
     register,
     handleSubmit,
     reset,
+    control,
     formState: { errors, isSubmitting }
   } = useForm<JobFormValues>({
     resolver: zodResolver(jobFormSchema),
@@ -162,8 +175,8 @@ export default function JobManagement() {
       department: '',
       location: '',
       description: '',
-      required_skills_raw: '',
-      preferred_skills_raw: '',
+      required_skills: [],
+      preferred_skills: [],
       experience_years: 2,
       employment_type: 'Full-time',
       salary_range: '',
@@ -198,8 +211,8 @@ export default function JobManagement() {
       department: '',
       location: '',
       description: '',
-      required_skills_raw: '',
-      preferred_skills_raw: '',
+      required_skills: [],
+      preferred_skills: [],
       experience_years: 2,
       employment_type: 'Full-time',
       salary_range: '',
@@ -221,8 +234,8 @@ export default function JobManagement() {
       department: job.department,
       location: job.location,
       description: job.description,
-      required_skills_raw: job.required_skills.join(', '),
-      preferred_skills_raw: job.preferred_skills ? job.preferred_skills.join(', ') : '',
+      required_skills: job.required_skills,
+      preferred_skills: job.preferred_skills || [],
       experience_years: job.experience_years,
       employment_type: job.employment_type,
       salary_range: job.salary_range,
@@ -233,22 +246,13 @@ export default function JobManagement() {
   // Submit Job
   const onSubmit = async (values: JobFormValues) => {
     try {
-      const required_skills = values.required_skills_raw
-        .split(',')
-        .map(s => s.trim())
-        .filter(s => s.length > 0);
-
-      const preferred_skills = values.preferred_skills_raw
-        ? values.preferred_skills_raw.split(',').map(s => s.trim()).filter(s => s.length > 0)
-        : [];
-
       const jobPayload: JobCreate = {
         title: values.title,
         department: values.department,
         location: values.location,
         description: values.description,
-        required_skills,
-        preferred_skills,
+        required_skills: values.required_skills,
+        preferred_skills: values.preferred_skills || [],
         experience_years: values.experience_years,
         employment_type: values.employment_type,
         salary_range: values.salary_range,
@@ -687,12 +691,18 @@ export default function JobManagement() {
                 {/* Job Title */}
                 <div>
                   <label className="block text-xs font-bold text-muted uppercase tracking-wider mb-2">Job Title *</label>
-                  <input
-                    type="text"
-                    placeholder="e.g. Senior Full Stack Developer"
-                    {...register('title')}
-                    className={`w-full px-4 py-2.5 bg-background border rounded-xl outline-none text-sm font-semibold transition ${errors.title ? 'border-danger focus:ring-2 focus:ring-danger/10' : 'border-border focus:border-primary focus:ring-2 focus:ring-primary/10'
-                      }`}
+                  <Controller
+                    control={control}
+                    name="title"
+                    render={({ field }) => (
+                      <SearchableCombobox 
+                        options={JOB_TITLE_OPTIONS}
+                        value={field.value}
+                        onChange={field.onChange}
+                        placeholder="e.g. Senior Full Stack Developer"
+                        error={!!errors.title}
+                      />
+                    )}
                   />
                   {errors.title && <p className="text-danger text-xs mt-1.5 font-medium">{errors.title.message}</p>}
                 </div>
@@ -701,27 +711,38 @@ export default function JobManagement() {
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="block text-xs font-bold text-muted uppercase tracking-wider mb-2">Department *</label>
-                    <input
-                      type="text"
-                      placeholder="e.g. Engineering"
-                      {...register('department')}
-                      className={`w-full px-4 py-2.5 bg-background border rounded-xl outline-none text-sm font-semibold transition ${errors.department ? 'border-danger' : 'border-border focus:border-primary'
-                        }`}
+                    <Controller
+                      control={control}
+                      name="department"
+                      render={({ field }) => (
+                        <SearchableCombobox 
+                          options={DEPT_OPTIONS}
+                          value={field.value}
+                          onChange={field.onChange}
+                          placeholder="e.g. Engineering"
+                          error={!!errors.department}
+                        />
+                      )}
                     />
                     {errors.department && <p className="text-danger text-xs mt-1.5 font-medium">{errors.department.message}</p>}
                   </div>
 
                   <div>
                     <label className="block text-xs font-bold text-muted uppercase tracking-wider mb-2">Employment Type *</label>
-                    <select
-                      {...register('employment_type')}
-                      className="w-full px-4 py-2.5 bg-background border border-border rounded-xl outline-none text-sm font-semibold text-text cursor-pointer focus:border-primary focus:ring-2 focus:ring-primary/10 transition"
-                    >
-                      <option value="Full-time">Full-time</option>
-                      <option value="Part-time">Part-time</option>
-                      <option value="Contract">Contract</option>
-                      <option value="Internship">Internship</option>
-                    </select>
+                    <Controller
+                      control={control}
+                      name="employment_type"
+                      render={({ field }) => (
+                        <SearchableCombobox 
+                          options={EMP_TYPE_OPTIONS}
+                          value={field.value}
+                          onChange={field.onChange}
+                          placeholder="e.g. Full-time"
+                          error={!!errors.employment_type}
+                        />
+                      )}
+                    />
+                    {errors.employment_type && <p className="text-danger text-xs mt-1.5 font-medium">{errors.employment_type.message}</p>}
                   </div>
                 </div>
 
@@ -729,26 +750,38 @@ export default function JobManagement() {
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="block text-xs font-bold text-muted uppercase tracking-wider mb-2">Location *</label>
-                    <input
-                      type="text"
-                      placeholder="e.g. San Francisco, CA or Remote"
-                      {...register('location')}
-                      className={`w-full px-4 py-2.5 bg-background border rounded-xl outline-none text-sm font-semibold transition ${errors.location ? 'border-danger' : 'border-border focus:border-primary'
-                        }`}
+                    <Controller
+                      control={control}
+                      name="location"
+                      render={({ field }) => (
+                        <SearchableCombobox 
+                          options={LOCATION_OPTIONS}
+                          value={field.value}
+                          onChange={field.onChange}
+                          placeholder="e.g. San Francisco, CA"
+                          error={!!errors.location}
+                        />
+                      )}
                     />
                     {errors.location && <p className="text-danger text-xs mt-1.5 font-medium">{errors.location.message}</p>}
                   </div>
 
                   <div>
                     <label className="block text-xs font-bold text-muted uppercase tracking-wider mb-2">Work Model *</label>
-                    <select
-                      {...register('work_model')}
-                      className="w-full px-4 py-2.5 bg-background border border-border rounded-xl outline-none text-sm font-semibold text-text cursor-pointer focus:border-primary focus:ring-2 focus:ring-primary/10 transition"
-                    >
-                      <option value="Remote">Remote</option>
-                      <option value="Hybrid">Hybrid</option>
-                      <option value="Onsite">Onsite</option>
-                    </select>
+                    <Controller
+                      control={control}
+                      name="work_model"
+                      render={({ field }) => (
+                        <SearchableCombobox 
+                          options={WORK_MODEL_OPTIONS}
+                          value={field.value}
+                          onChange={field.onChange}
+                          placeholder="e.g. Remote"
+                          error={!!errors.work_model}
+                        />
+                      )}
+                    />
+                    {errors.work_model && <p className="text-danger text-xs mt-1.5 font-medium">{errors.work_model.message}</p>}
                   </div>
                 </div>
 
@@ -756,24 +789,36 @@ export default function JobManagement() {
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="block text-xs font-bold text-muted uppercase tracking-wider mb-2">Required Experience (Years) *</label>
-                    <input
-                      type="number"
-                      placeholder="e.g. 3"
-                      {...register('experience_years')}
-                      className={`w-full px-4 py-2.5 bg-background border rounded-xl outline-none text-sm font-semibold transition ${errors.experience_years ? 'border-danger' : 'border-border focus:border-primary'
-                        }`}
+                    <Controller
+                      control={control}
+                      name="experience_years"
+                      render={({ field }) => (
+                        <SearchableCombobox 
+                          options={EXP_YEARS_OPTIONS}
+                          value={field.value?.toString() || ''}
+                          onChange={(val) => field.onChange(val ? Number(val) : 0)}
+                          placeholder="e.g. 3"
+                          error={!!errors.experience_years}
+                        />
+                      )}
                     />
                     {errors.experience_years && <p className="text-danger text-xs mt-1.5 font-medium">{errors.experience_years.message}</p>}
                   </div>
 
                   <div>
                     <label className="block text-xs font-bold text-muted uppercase tracking-wider mb-2">Salary Range *</label>
-                    <input
-                      type="text"
-                      placeholder="e.g. $120K - $150K"
-                      {...register('salary_range')}
-                      className={`w-full px-4 py-2.5 bg-background border rounded-xl outline-none text-sm font-semibold transition ${errors.salary_range ? 'border-danger' : 'border-border focus:border-primary'
-                        }`}
+                    <Controller
+                      control={control}
+                      name="salary_range"
+                      render={({ field }) => (
+                        <SearchableCombobox 
+                          options={SALARY_OPTIONS}
+                          value={field.value}
+                          onChange={field.onChange}
+                          placeholder="e.g. $120K - $150K"
+                          error={!!errors.salary_range}
+                        />
+                      )}
                     />
                     {errors.salary_range && <p className="text-danger text-xs mt-1.5 font-medium">{errors.salary_range.message}</p>}
                   </div>
@@ -794,26 +839,39 @@ export default function JobManagement() {
 
                 {/* Skills - Required */}
                 <div>
-                  <label className="block text-xs font-bold text-muted uppercase tracking-wider mb-2">Required Skills * (comma-separated)</label>
-                  <input
-                    type="text"
-                    placeholder="e.g. React, Node.js, TypeScript, PostgreSQL"
-                    {...register('required_skills_raw')}
-                    className={`w-full px-4 py-2.5 bg-background border rounded-xl outline-none text-sm font-semibold transition ${errors.required_skills_raw ? 'border-danger' : 'border-border focus:border-primary'
-                      }`}
+                  <label className="block text-xs font-bold text-muted uppercase tracking-wider mb-2">Required Skills *</label>
+                  <Controller
+                    control={control}
+                    name="required_skills"
+                    render={({ field }) => (
+                      <MultiSelectCombobox 
+                        options={SKILLS_OPTIONS}
+                        value={field.value}
+                        onChange={field.onChange}
+                        placeholder="e.g. React, Node.js, TypeScript"
+                        error={!!errors.required_skills}
+                      />
+                    )}
                   />
-                  <p className="text-[11px] text-muted font-medium mt-1">Separate skills with commas (e.g., Python, Docker, AWS)</p>
-                  {errors.required_skills_raw && <p className="text-danger text-xs mt-1.5 font-medium">{errors.required_skills_raw.message}</p>}
+                  <p className="text-[11px] text-muted font-medium mt-1">Select or type to add required skills (e.g., Python, Docker, AWS)</p>
+                  {errors.required_skills && <p className="text-danger text-xs mt-1.5 font-medium">{errors.required_skills.message}</p>}
                 </div>
 
                 {/* Skills - Preferred */}
                 <div>
-                  <label className="block text-xs font-bold text-muted uppercase tracking-wider mb-2">Preferred Skills (comma-separated, optional)</label>
-                  <input
-                    type="text"
-                    placeholder="e.g. AWS, Kubernetes, GraphQL"
-                    {...register('preferred_skills_raw')}
-                    className="w-full px-4 py-2.5 bg-background border border-border rounded-xl outline-none text-sm font-semibold focus:border-primary focus:ring-2 focus:ring-primary/10 transition"
+                  <label className="block text-xs font-bold text-muted uppercase tracking-wider mb-2">Preferred Skills (optional)</label>
+                  <Controller
+                    control={control}
+                    name="preferred_skills"
+                    render={({ field }) => (
+                      <MultiSelectCombobox 
+                        options={SKILLS_OPTIONS}
+                        value={field.value || []}
+                        onChange={field.onChange}
+                        placeholder="e.g. AWS, Kubernetes, GraphQL"
+                        error={!!errors.preferred_skills}
+                      />
+                    )}
                   />
                   <p className="text-[11px] text-muted font-medium mt-1">Optional secondary skills that are nice to have</p>
                 </div>

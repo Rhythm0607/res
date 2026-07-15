@@ -4,6 +4,7 @@ export interface UserResponse {
   id: number;
   email: string;
   full_name: string;
+  avatar_url?: string;
 }
 
 export interface TokenResponse {
@@ -38,6 +39,26 @@ export const authService = {
 
   getMe: async (): Promise<UserResponse> => {
     const response = await api.get<UserResponse>('/auth/me');
+    return response.data;
+  },
+
+  updateProfile: async (fullName: string, email: string): Promise<UserResponse> => {
+    const response = await api.put<UserResponse>('/auth/profile', { full_name: fullName, email });
+    return response.data;
+  },
+
+  updatePassword: async (currentPassword: string, newPassword: string): Promise<void> => {
+    await api.put('/auth/password', { current_password: currentPassword, new_password: newPassword });
+  },
+
+  uploadAvatar: async (file: File): Promise<UserResponse> => {
+    const formData = new FormData();
+    formData.append('file', file);
+    const response = await api.post<UserResponse>('/auth/avatar', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
     return response.data;
   },
 };

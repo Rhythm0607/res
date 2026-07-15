@@ -1,7 +1,8 @@
 import { Outlet, Link, useLocation } from 'react-router-dom';
 import { LayoutDashboard, Briefcase, Users, MessageSquare, Settings, Bell, Search, BrainCircuit, LogOut } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
-
+import { GlobalSearch } from '../components/GlobalSearch';
+import { NotificationBell } from '../components/NotificationBell';
 export default function DashboardLayout() {
   const location = useLocation();
   const { user, logout } = useAuth();
@@ -116,46 +117,11 @@ export default function DashboardLayout() {
           }}
         >
           {/* Search */}
-          <div className="relative w-96">
-            <Search
-              className="absolute left-3.5 top-1/2 -translate-y-1/2"
-              size={17}
-              style={{ color: '#6B7A77' }}
-            />
-            <input
-              type="text"
-              placeholder="Search across HireSense..."
-              className="w-full pl-10 pr-4 py-2.5 rounded-xl text-sm font-medium outline-none transition-all"
-              style={{
-                backgroundColor: '#EBEDE8',
-                border: '1.5px solid #D1D7D0',
-                color: '#333F3C',
-              }}
-              onFocus={(e) => {
-                e.currentTarget.style.borderColor = '#004838';
-                e.currentTarget.style.boxShadow = '0 0 0 3px rgba(0,72,56,0.1)';
-              }}
-              onBlur={(e) => {
-                e.currentTarget.style.borderColor = '#D1D7D0';
-                e.currentTarget.style.boxShadow = 'none';
-              }}
-            />
-          </div>
+          <GlobalSearch />
 
           {/* Right actions */}
           <div className="flex items-center gap-3">
-            <button
-              className="relative p-2.5 rounded-xl transition-colors"
-              style={{ color: '#333F3C' }}
-              onMouseEnter={(e) => (e.currentTarget as HTMLElement).style.backgroundColor = '#EBEDE8'}
-              onMouseLeave={(e) => (e.currentTarget as HTMLElement).style.backgroundColor = 'transparent'}
-            >
-              <Bell size={20} />
-              <span
-                className="absolute top-2 right-2 w-2 h-2 rounded-full"
-                style={{ backgroundColor: '#dc2626', border: '2px solid white' }}
-              />
-            </button>
+            <NotificationBell />
             <Link
               to="/app/jobs?create=true"
               className="px-5 py-2.5 text-sm font-bold rounded-xl transition-all"
