@@ -15,7 +15,7 @@ import { settingsService, UserSettings } from '../services/settingsService';
 import { teamService, TeamMember } from '../services/teamService';
 import { workflowService, WorkflowStage } from '../services/workflowService';
 import { jobService, DashboardStats } from '../services/jobService';
-import api from '../services/api';
+import { BACKEND_URL } from '../config';
 
 export default function Settings() {
   const [activeTab, setActiveTab] = useState('Overview');
@@ -170,7 +170,7 @@ export default function Settings() {
   // Construct Avatar URL
   const getAvatarUrl = (path?: string) => {
     if (!path) return `https://ui-avatars.com/api/?name=${user?.full_name || 'User'}&background=random`;
-    return `${api.defaults.baseURL?.replace('/api/v1', '')}${path}`;
+    return `${BACKEND_URL}${path}`;
   };
 
   const renderOverviewTab = () => (
