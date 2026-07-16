@@ -43,7 +43,6 @@ def extract_text(file_path: str) -> str:
             return ""
 
 import json
-from langchain_openai import ChatOpenAI
 from app.core.config import settings
 
 def parse_resume_fallback(text: str) -> Dict[str, Any]:
@@ -189,6 +188,7 @@ def parse_resume(text: str) -> Dict[str, Any]:
     # 1. If OpenAI API Key is configured, use OpenAI
     if settings.OPENAI_API_KEY:
         try:
+            from langchain_openai import ChatOpenAI
             llm = ChatOpenAI(
                 model_name="gpt-4o-mini",
                 temperature=0.1,

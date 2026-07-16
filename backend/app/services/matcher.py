@@ -1,5 +1,3 @@
-from sklearn.metrics.pairwise import cosine_similarity
-
 # Cache model instance to load lazily only when needed
 _model = None
 
@@ -12,6 +10,7 @@ def get_sentence_transformer():
     return _model
 
 def compute_semantic_similarity(resume_text: str, jd_text: str) -> float:
+    from sklearn.metrics.pairwise import cosine_similarity
     model = get_sentence_transformer()
     embeddings = model.encode([resume_text, jd_text])
     similarity = cosine_similarity([embeddings[0]], [embeddings[1]])[0][0]

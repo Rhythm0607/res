@@ -1,104 +1,125 @@
 from typing import Optional, List, Any
 import json
 import requests
-from langchain.text_splitter import RecursiveCharacterTextSplitter
-from langchain_openai import OpenAIEmbeddings, ChatOpenAI
-from langchain.vectorstores import FAISS
-from langchain.chains import ConversationalRetrievalChain
-from langchain.embeddings.base import Embeddings
-from langchain.llms.base import LLM
-from sentence_transformers import SentenceTransformer
 from app.core.config import settings
 
-class LocalSentenceTransformerEmbeddings(Embeddings):
-    """
-    Local embeddings generator using sentence-transformers.
-    Runs entirely on-device (CPU/GPU) for free.
-    """
-    def __init__(self):
-        # Cache and load the MiniLM transformer
-        self.model = SentenceTransformer('all-MiniLM-L6-v2')
-        
-    def embed_documents(self, texts: List[str]) -> List[List[float]]:
-        embeddings = self.model.encode(texts)
-        return embeddings.tolist()
-        
-    def embed_query(self, text: str) -> List[float]:
-        embedding = self.model.encode([text])[0]
-        return embedding.tolist()
+# Cache dict for classes to avoid rebuilding them on every request
+_ml_cache = None
 
-class OllamaLLM(LLM):
-    """
-    Local LLM connector executing queries via Ollama API.
-    Provides free offline resume question answering.
-    """
-    model_name: str = "llama3"
-    
-    @property
-    def _llm_type(self) -> str:
-        return "ollama"
+def _get_ml_resources():
+    global _ml_cache
+    if _ml_cache is None:
+        from langchain.embeddings.base import Embeddings
+        from langchain.llms.base import LLM
+        from sentence_transformers import SentenceTransformer
         
-    def _call(self, prompt: str, stop: Optional[List[str]] = None, **kwargs: Any) -> str:
-        try:
-            res = requests.post(
-                "http://localhost:11434/api/generate",
-                json={
-                    "model": self.model_name,
-                    "prompt": prompt,
-                    "stream": False,
-                    "options": {"temperature": 0.2}
-                },
-                timeout=30
-            )
-            if res.status_code == 200:
-                return res.json().get("response", "")
-            return f"Error: Ollama returned status code {res.status_code}."
-        except Exception:
-            return (
-                "Ollama is offline or not running. Please start Ollama using 'ollama run llama3' "
-                "in your terminal, or configure an OPENAI_API_KEY in your backend/.env to use OpenAI."
-            )
-class GeminiLLM(LLM):
-    """
-    Cloud Gemini LLM connector executing queries via REST API.
-    Provides free cloud-based resume question answering.
-    """
-    api_key: str
-    model_name: str = "gemini-2.5-flash"
-    
-    @property
-    def _llm_type(self) -> str:
-        return "gemini"
-        
-    def _call(self, prompt: str, stop: Optional[List[str]] = None, **kwargs: Any) -> str:
-        models = ["gemini-2.5-flash", "gemini-2.0-flash", "gemini-1.5-flash"]
-        payload = {
-            "contents": [
-                {
-                    "parts": [{"text": prompt}]
-                }
-            ],
-            "generationConfig": {
-                "temperature": 0.2
-            }
-        }
-        
-        last_error = ""
-        for model in models:
-            url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={self.api_key}"
-            try:
-                res = requests.post(url, json=payload, timeout=30)
-                if res.status_code == 200:
-                    data = res.json()
-                    return data['candidates'][0]['content']['parts'][0]['text']
-                else:
-                    last_error = f"Model {model} returned status {res.status_code}: {res.text}"
-            except Exception as e:
-                last_error = f"Model {model} failed with exception: {str(e)}"
+        class LocalSentenceTransformerEmbeddings(Embeddings):
+            """
+            Local embeddings generator using sentence-transformers.
+            Runs entirely on-device (CPU/GPU) for free.
+            """
+            def __init__(self):
+                # Cache and load the MiniLM transformer
+                self.model = SentenceTransformer('all-MiniLM-L6-v2')
                 
-        return f"Failed to call Gemini API: {last_error}"
+            def embed_documents(self, texts: List[str]) -> List[List[float]]:
+                embeddings = self.model.encode(texts)
+                return embeddings.tolist()
+                
+            def embed_query(self, text: str) -> List[float]:
+                embedding = self.model.encode([text])[0]
+                return embedding.tolist()
+
+        class OllamaLLM(LLM):
+            """
+            Local LLM connector executing queries via Ollama API.
+            Provides free offline resume question answering.
+            """
+            model_name: str = "llama3"
+            
+            @property
+            def _llm_type(self) -> str:
+                return "ollama"
+                
+            def _call(self, prompt: str, stop: Optional[List[str]] = None, **kwargs: Any) -> str:
+                try:
+                    res = requests.post(
+                        "http://localhost:11434/api/generate",
+                        json={
+                            "model": self.model_name,
+                            "prompt": prompt,
+                            "stream": False,
+                            "options": {"temperature": 0.2}
+                        },
+                        timeout=30
+                    )
+                    if res.status_code == 200:
+                        return res.json().get("response", "")
+                    return f"Error: Ollama returned status code {res.status_code}."
+                except Exception:
+                    return (
+                        "Ollama is offline or not running. Please start Ollama using 'ollama run llama3' "
+                        "in your terminal, or configure an OPENAI_API_KEY in your backend/.env to use OpenAI."
+                    )
+
+        class GeminiLLM(LLM):
+            """
+            Cloud Gemini LLM connector executing queries via REST API.
+            Provides free cloud-based resume question answering.
+            """
+            api_key: str
+            model_name: str = "gemini-2.5-flash"
+            
+            @property
+            def _llm_type(self) -> str:
+                return "gemini"
+                
+            def _call(self, prompt: str, stop: Optional[List[str]] = None, **kwargs: Any) -> str:
+                models = ["gemini-2.5-flash", "gemini-2.0-flash", "gemini-1.5-flash"]
+                payload = {
+                    "contents": [
+                        {
+                            "parts": [{"text": prompt}]
+                        }
+                    ],
+                    "generationConfig": {
+                        "temperature": 0.2
+                    }
+                }
+                
+                last_error = ""
+                for model in models:
+                    url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={self.api_key}"
+                    try:
+                        res = requests.post(url, json=payload, timeout=30)
+                        if res.status_code == 200:
+                            data = res.json()
+                            return data['candidates'][0]['content']['parts'][0]['text']
+                        else:
+                            last_error = f"Model {model} returned status {res.status_code}: {res.text}"
+                    except Exception as e:
+                        last_error = f"Model {model} failed with exception: {str(e)}"
+                        
+                return f"Failed to call Gemini API: {last_error}"
+
+        _ml_cache = {
+            "LocalSentenceTransformerEmbeddings": LocalSentenceTransformerEmbeddings,
+            "OllamaLLM": OllamaLLM,
+            "GeminiLLM": GeminiLLM
+        }
+    return _ml_cache
 
 def build_rag_chain(text: str):
+    from langchain.text_splitter import RecursiveCharacterTextSplitter
+    from langchain_openai import OpenAIEmbeddings, ChatOpenAI
+    from langchain.vectorstores import FAISS
+    from langchain.chains import ConversationalRetrievalChain
+
+    resources = _get_ml_resources()
+    LocalSentenceTransformerEmbeddings = resources["LocalSentenceTransformerEmbeddings"]
+    GeminiLLM = resources["GeminiLLM"]
+    OllamaLLM = resources["OllamaLLM"]
+
     text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=100)
     docs = text_splitter.create_documents([text])
     
@@ -141,7 +162,10 @@ def query_resume(chain, question: str, chat_history: List[dict]):
 
 def generate_interview_questions(resume_text: str, jd_text: str, required_skills: List[str], candidate_skills: List[str]) -> List[dict]:
     # 1. Determine active LLM
-    from app.core.config import settings
+    resources = _get_ml_resources()
+    GeminiLLM = resources["GeminiLLM"]
+    OllamaLLM = resources["OllamaLLM"]
+
     llm = None
     if settings.OPENAI_API_KEY:
         from langchain_openai import ChatOpenAI
@@ -265,7 +289,10 @@ def generate_email_outreach(
     candidate_name: str,
     job_title: str
 ) -> dict:
-    from app.core.config import settings
+    resources = _get_ml_resources()
+    GeminiLLM = resources["GeminiLLM"]
+    OllamaLLM = resources["OllamaLLM"]
+
     llm = None
     if settings.OPENAI_API_KEY:
         from langchain_openai import ChatOpenAI
