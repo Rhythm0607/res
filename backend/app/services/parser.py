@@ -1,15 +1,7 @@
 import pdfplumber
-import spacy
 import re
 import requests
 from typing import Dict, Any
-
-try:
-    nlp = spacy.load("en_core_web_sm")
-except:
-    import spacy.cli
-    spacy.cli.download("en_core_web_sm")
-    nlp = spacy.load("en_core_web_sm")
 
 COMMON_SKILLS = ["python", "java", "react", "node.js", "aws", "docker", "kubernetes", "sql", "fastapi", "typescript", "c++", "machine learning"]
 
