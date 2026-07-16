@@ -19,6 +19,7 @@ export function SearchableCombobox({
 }: SearchableComboboxProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [query, setQuery] = useState('');
+  const [isSearching, setIsSearching] = useState(false);
   const [localOptions, setLocalOptions] = useState<string[]>(initialOptions);
   const wrapperRef = useRef<HTMLDivElement>(null);
 
@@ -37,6 +38,7 @@ export function SearchableCombobox({
     function handleClickOutside(event: MouseEvent) {
       if (wrapperRef.current && !wrapperRef.current.contains(event.target as Node)) {
         setIsOpen(false);
+        setIsSearching(false);
         // If clicking away and query isn't empty but doesn't exactly match the value,
         // we can optionally set the value to the query. For now, let's keep the query as the value
         if (query && query !== value) {
@@ -51,9 +53,9 @@ export function SearchableCombobox({
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [query, value, localOptions, onChange]);
 
-  const filteredOptions = localOptions.filter(opt =>
-    opt.toLowerCase().includes(query.toLowerCase())
-  );
+  const filteredOptions = isSearching
+    ? localOptions.filter(opt => opt.toLowerCase().includes(query.toLowerCase()))
+    : localOptions;
 
   const exactMatch = localOptions.find(opt => opt.toLowerCase() === query.trim().toLowerCase());
 
@@ -61,6 +63,7 @@ export function SearchableCombobox({
     setQuery(option);
     onChange(option);
     setIsOpen(false);
+    setIsSearching(false);
   };
 
   const handleAdd = () => {
@@ -70,6 +73,7 @@ export function SearchableCombobox({
     }
     onChange(newOpt);
     setIsOpen(false);
+    setIsSearching(false);
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -89,8 +93,12 @@ export function SearchableCombobox({
             setQuery(e.target.value);
             onChange(e.target.value); // Sync to form state immediately
             setIsOpen(true);
+            setIsSearching(true);
           }}
-          onFocus={() => setIsOpen(true)}
+          onFocus={() => {
+            setIsOpen(true);
+            setIsSearching(false);
+          }}
           onKeyDown={handleKeyDown}
           placeholder={placeholder}
           className={`w-full px-4 py-2.5 bg-background border rounded-xl outline-none text-sm font-semibold transition ${

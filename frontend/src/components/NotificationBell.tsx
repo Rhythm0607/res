@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Bell, CheckCircle, Clock, Check, AlertCircle, FileText, User } from 'lucide-react';
+import { Bell, CheckCircle, Clock, AlertCircle, FileText, User } from 'lucide-react';
 import { notificationService, NotificationResponse } from '../services/notificationService';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';

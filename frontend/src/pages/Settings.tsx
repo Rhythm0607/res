@@ -2,12 +2,9 @@ import { useState, useEffect, useRef } from 'react';
 import {
   Bell,
   BrainCircuit,
-  BriefcaseBusiness,
-  FileText,
   LayoutDashboard,
   MessageSquareText,
   Plus,
-  Search,
   SlidersHorizontal,
   Sparkles,
   Upload,

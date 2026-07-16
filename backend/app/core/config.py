@@ -8,13 +8,21 @@ class Settings(BaseSettings):
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24 * 8
     DATABASE_URL: str = os.getenv(
-    "DATABASE_URL",
-    "postgresql://postgres:Tanvi%40123@localhost:5432/hiresense"
-)
-
+        "DATABASE_URL",
+        "postgresql://postgres:Tanvi%40123@localhost:5432/hiresense"
+    )
+    GOOGLE_CLIENT_ID: str = ""
+    GEMINI_API_KEY: str = ""
+    OPENAI_API_KEY: str = ""
+    SMTP_HOST: str = "smtp.gmail.com"
+    SMTP_PORT: int = 587
+    SMTP_USER: str = ""
+    SMTP_PASSWORD: str = ""
+    SMTP_FROM: str = ""
 
     class Config:
         env_file = ".env"
         case_sensitive = True
+        extra = "ignore"
 
 settings = Settings()

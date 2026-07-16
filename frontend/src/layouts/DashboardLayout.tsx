@@ -1,5 +1,5 @@
 import { Outlet, Link, useLocation } from 'react-router-dom';
-import { LayoutDashboard, Briefcase, Users, MessageSquare, Settings, Bell, Search, BrainCircuit, LogOut } from 'lucide-react';
+import { LayoutDashboard, Briefcase, Users, MessageSquare, Settings, BrainCircuit, LogOut } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { GlobalSearch } from '../components/GlobalSearch';
 import { NotificationBell } from '../components/NotificationBell';
